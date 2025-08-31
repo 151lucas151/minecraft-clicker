@@ -183,7 +183,7 @@ Edit `script.js` to adjust:
 
 ## 📄 License
 
-This project is open source. Please respect the original creator, Lucas Henry Bishop.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Please respect the original creator, Lucas Henry Bishop.
 
 ## 👨‍💻 Credits
 

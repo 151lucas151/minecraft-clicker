@@ -11,7 +11,9 @@ class MinecraftClicker {
             startTime: Date.now(),
             playTime: 0,
             upgrades: {},
-            achievements: {}
+            achievements: {},
+            username: '',
+            highScore: 0
         };
 
         this.upgrades = [
@@ -82,6 +84,7 @@ class MinecraftClicker {
         ];
 
         this.achievements = [
+            // Click achievements
             {
                 id: 'first_click',
                 name: 'First Click',
@@ -104,6 +107,117 @@ class MinecraftClicker {
                 reward: 1000
             },
             {
+                id: 'ten_thousand_clicks',
+                name: 'Ten Thousand Clicks',
+                description: 'Click 10,000 times',
+                condition: () => this.gameState.totalClicks >= 10000,
+                reward: 10000
+            },
+            {
+                id: 'hundred_thousand_clicks',
+                name: 'Hundred Thousand Clicks',
+                description: 'Click 100,000 times',
+                condition: () => this.gameState.totalClicks >= 100000,
+                reward: 100000
+            },
+            {
+                id: 'million_clicks',
+                name: 'Million Clicks',
+                description: 'Click 1,000,000 times',
+                condition: () => this.gameState.totalClicks >= 1000000,
+                reward: 1000000
+            },
+            
+            // Block achievements
+            {
+                id: 'hundred_blocks',
+                name: 'Hundred Blocks',
+                description: 'Have 100 blocks',
+                condition: () => this.gameState.blocks >= 100,
+                reward: 200
+            },
+            {
+                id: 'thousand_blocks',
+                name: 'Thousand Blocks',
+                description: 'Have 1,000 blocks',
+                condition: () => this.gameState.blocks >= 1000,
+                reward: 2000
+            },
+            {
+                id: 'ten_thousand_blocks',
+                name: 'Ten Thousand Blocks',
+                description: 'Have 10,000 blocks',
+                condition: () => this.gameState.blocks >= 10000,
+                reward: 20000
+            },
+            {
+                id: 'hundred_thousand_blocks',
+                name: 'Hundred Thousand Blocks',
+                description: 'Have 100,000 blocks',
+                condition: () => this.gameState.blocks >= 100000,
+                reward: 200000
+            },
+            {
+                id: 'million_blocks',
+                name: 'Million Blocks',
+                description: 'Have 1,000,000 blocks',
+                condition: () => this.gameState.blocks >= 1000000,
+                reward: 1000000
+            },
+            {
+                id: 'ten_million_blocks',
+                name: 'Ten Million Blocks',
+                description: 'Have 10,000,000 blocks',
+                condition: () => this.gameState.blocks >= 10000000,
+                reward: 10000000
+            },
+            {
+                id: 'hundred_million_blocks',
+                name: 'Hundred Million Blocks',
+                description: 'Have 100,000,000 blocks',
+                condition: () => this.gameState.blocks >= 100000000,
+                reward: 100000000
+            },
+            {
+                id: 'billion_blocks',
+                name: 'Billion Blocks',
+                description: 'Have 1,000,000,000 blocks',
+                condition: () => this.gameState.blocks >= 1000000000,
+                reward: 1000000000
+            },
+            {
+                id: 'trillion_blocks',
+                name: 'Trillion Blocks',
+                description: 'Have 1,000,000,000,000 blocks',
+                condition: () => this.gameState.blocks >= 1000000000000,
+                reward: 1000000000000
+            },
+            
+            // Total mined achievements
+            {
+                id: 'million_mined',
+                name: 'Million Mined',
+                description: 'Mine 1,000,000 blocks total',
+                condition: () => this.gameState.totalMined >= 1000000,
+                reward: 500000
+            },
+            {
+                id: 'billion_mined',
+                name: 'Billion Mined',
+                description: 'Mine 1,000,000,000 blocks total',
+                condition: () => this.gameState.totalMined >= 1000000000,
+                reward: 500000000
+            },
+            {
+                id: 'trillion_mined',
+                name: 'Trillion Mined',
+                description: 'Mine 1,000,000,000,000 blocks total',
+                condition: () => this.gameState.totalMined >= 1000000000000,
+                reward: 500000000000
+            },
+            
+            // Upgrade achievements
+            {
                 id: 'first_upgrade',
                 name: 'First Tool',
                 description: 'Buy your first mining tool',
@@ -118,25 +232,122 @@ class MinecraftClicker {
                 reward: 500
             },
             {
-                id: 'hundred_blocks',
-                name: 'Hundred Blocks',
-                description: 'Have 100 blocks',
-                condition: () => this.gameState.blocks >= 100,
-                reward: 200
+                id: 'hundred_upgrades',
+                name: 'Tool Master',
+                description: 'Own 100 mining tools',
+                condition: () => this.gameState.upgradesOwned >= 100,
+                reward: 5000
             },
             {
-                id: 'thousand_blocks',
-                name: 'Thousand Blocks',
-                description: 'Have 1000 blocks',
-                condition: () => this.gameState.blocks >= 1000,
-                reward: 2000
+                id: 'thousand_upgrades',
+                name: 'Tool Legend',
+                description: 'Own 1,000 mining tools',
+                condition: () => this.gameState.upgradesOwned >= 1000,
+                reward: 50000
+            },
+            
+            // Specific tool achievements
+            {
+                id: 'wooden_master',
+                name: 'Wooden Master',
+                description: 'Own 10 wooden pickaxes',
+                condition: () => (this.gameState.upgrades['wooden_pickaxe'] || 0) >= 10,
+                reward: 1000
             },
             {
-                id: 'million_blocks',
-                name: 'Million Blocks',
-                description: 'Have 1,000,000 blocks',
-                condition: () => this.gameState.blocks >= 1000000,
+                id: 'stone_master',
+                name: 'Stone Master',
+                description: 'Own 10 stone pickaxes',
+                condition: () => (this.gameState.upgrades['stone_pickaxe'] || 0) >= 10,
+                reward: 5000
+            },
+            {
+                id: 'iron_master',
+                name: 'Iron Master',
+                description: 'Own 10 iron pickaxes',
+                condition: () => (this.gameState.upgrades['iron_pickaxe'] || 0) >= 10,
+                reward: 25000
+            },
+            {
+                id: 'diamond_master',
+                name: 'Diamond Master',
+                description: 'Own 10 diamond pickaxes',
+                condition: () => (this.gameState.upgrades['diamond_pickaxe'] || 0) >= 10,
                 reward: 100000
+            },
+            {
+                id: 'netherite_master',
+                name: 'Netherite Master',
+                description: 'Own 10 netherite pickaxes',
+                condition: () => (this.gameState.upgrades['netherite_pickaxe'] || 0) >= 10,
+                reward: 500000
+            },
+            {
+                id: 'robot_master',
+                name: 'Robot Master',
+                description: 'Own 10 mining robots',
+                condition: () => (this.gameState.upgrades['mining_robot'] || 0) >= 10,
+                reward: 2500000
+            },
+            {
+                id: 'mine_master',
+                name: 'Mine Master',
+                description: 'Own 10 automated mines',
+                condition: () => (this.gameState.upgrades['automated_mine'] || 0) >= 10,
+                reward: 10000000
+            },
+            {
+                id: 'quantum_master',
+                name: 'Quantum Master',
+                description: 'Own 10 quantum miners',
+                condition: () => (this.gameState.upgrades['quantum_miner'] || 0) >= 10,
+                reward: 50000000
+            },
+            
+            // Rate achievements
+            {
+                id: 'hundred_per_second',
+                name: 'Hundred Per Second',
+                description: 'Generate 100 blocks per second',
+                condition: () => this.gameState.blocksPerSecond >= 100,
+                reward: 10000
+            },
+            {
+                id: 'thousand_per_second',
+                name: 'Thousand Per Second',
+                description: 'Generate 1,000 blocks per second',
+                condition: () => this.gameState.blocksPerSecond >= 1000,
+                reward: 100000
+            },
+            {
+                id: 'million_per_second',
+                name: 'Million Per Second',
+                description: 'Generate 1,000,000 blocks per second',
+                condition: () => this.gameState.blocksPerSecond >= 1000000,
+                reward: 10000000
+            },
+            
+            // Play time achievements
+            {
+                id: 'hour_played',
+                name: 'Hour Player',
+                description: 'Play for 1 hour',
+                condition: () => this.gameState.playTime >= 3600000,
+                reward: 5000
+            },
+            {
+                id: 'day_played',
+                name: 'Day Player',
+                description: 'Play for 24 hours',
+                condition: () => this.gameState.playTime >= 86400000,
+                reward: 100000
+            },
+            {
+                id: 'week_played',
+                name: 'Week Player',
+                description: 'Play for 168 hours (1 week)',
+                condition: () => this.gameState.playTime >= 604800000,
+                reward: 1000000
             }
         ];
 
@@ -160,13 +371,17 @@ class MinecraftClicker {
 
         // Control buttons
         document.getElementById('saveButton').addEventListener('click', () => {
-            this.saveGame();
-            this.showNotification('Game saved!', 'success');
+            if (this.saveGame()) {
+                this.showNotification('Game saved!', 'success');
+            } else {
+                this.showNotification('Failed to save game!', 'error');
+            }
         });
 
         document.getElementById('loadButton').addEventListener('click', () => {
-            this.loadGame();
-            this.showNotification('Game loaded!', 'success');
+            if (this.loadGame()) {
+                this.showNotification('Game loaded!', 'success');
+            }
         });
 
         document.getElementById('resetButton').addEventListener('click', () => {
@@ -174,6 +389,28 @@ class MinecraftClicker {
                 this.resetGame();
                 this.showNotification('Game reset!', 'success');
             }
+        });
+
+        // Username functionality
+        document.getElementById('setUsernameButton').addEventListener('click', () => {
+            const username = document.getElementById('usernameInput').value;
+            this.setUsername(username);
+        });
+
+        document.getElementById('usernameInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const username = e.target.value;
+                this.setUsername(username);
+            }
+        });
+
+        // High score functionality
+        document.getElementById('saveHighScoreButton').addEventListener('click', () => {
+            this.saveHighScore();
+        });
+
+        document.getElementById('showHighScoresButton').addEventListener('click', () => {
+            this.showHighScores();
         });
 
         // Keyboard shortcuts
@@ -350,6 +587,24 @@ class MinecraftClicker {
         
                 document.getElementById('playTime').textContent = timeString;
 
+        // Update username display
+        const currentUsernameElement = document.getElementById('currentUsername');
+        if (this.gameState.username) {
+            currentUsernameElement.textContent = `Current: ${this.gameState.username}`;
+            currentUsernameElement.style.display = 'block';
+        } else {
+            currentUsernameElement.style.display = 'none';
+        }
+        
+        // Update personal high score display
+        const personalHighScoreElement = document.getElementById('personalHighScore');
+        if (this.gameState.highScore > 0) {
+            personalHighScoreElement.textContent = `Personal Best: ${this.formatNumber(this.gameState.highScore)} blocks mined`;
+            personalHighScoreElement.style.display = 'block';
+        } else {
+            personalHighScoreElement.style.display = 'none';
+        }
+
         // Update mining tool display
         this.updateMiningTool();
 
@@ -428,27 +683,63 @@ class MinecraftClicker {
     }
 
     saveGame() {
-        const saveData = {
-            ...this.gameState,
-            saveTime: Date.now()
-        };
-        localStorage.setItem('minecraftClickerSave', JSON.stringify(saveData));
+        try {
+            const saveData = {
+                ...this.gameState,
+                saveTime: Date.now()
+            };
+            localStorage.setItem('minecraftClickerSave', JSON.stringify(saveData));
+            return true;
+        } catch (error) {
+            console.error('Failed to save game:', error);
+            return false;
+        }
     }
 
     loadGame() {
-        const saveData = localStorage.getItem('minecraftClickerSave');
-        if (saveData) {
-            const loadedState = JSON.parse(saveData);
-            
-            // Preserve start time for play time calculation
-            const originalStartTime = this.gameState.startTime;
-            
-            this.gameState = { ...loadedState };
-            this.gameState.startTime = originalStartTime;
-            
-            this.updateDisplay();
-            this.renderUpgrades();
-            this.renderAchievements();
+        try {
+            const saveData = localStorage.getItem('minecraftClickerSave');
+            if (saveData) {
+                const loadedState = JSON.parse(saveData);
+                
+                // Validate save data structure
+                if (!loadedState || typeof loadedState !== 'object') {
+                    throw new Error('Invalid save data format');
+                }
+                
+                // Merge with current game state to handle missing properties
+                const mergedState = {
+                    blocks: 0,
+                    blocksPerClick: 1,
+                    blocksPerSecond: 0,
+                    totalMined: 0,
+                    totalClicks: 0,
+                    upgradesOwned: 0,
+                    startTime: Date.now(),
+                    playTime: 0,
+                    upgrades: {},
+                    achievements: {},
+                    ...loadedState
+                };
+                
+                // Calculate play time correctly
+                const currentTime = Date.now();
+                const saveTime = loadedState.saveTime || currentTime;
+                const timeSinceSave = currentTime - saveTime;
+                
+                this.gameState = mergedState;
+                this.gameState.startTime = currentTime - (timeSinceSave + (loadedState.playTime || 0));
+                
+                this.updateDisplay();
+                this.renderUpgrades();
+                this.renderAchievements();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to load game:', error);
+            this.showNotification('Failed to load save data. Starting fresh game.', 'error');
+            return false;
         }
     }
 
@@ -463,13 +754,102 @@ class MinecraftClicker {
             startTime: Date.now(),
             playTime: 0,
             upgrades: {},
-            achievements: {}
+            achievements: {},
+            username: this.gameState.username,
+            highScore: this.gameState.highScore
         };
         
         localStorage.removeItem('minecraftClickerSave');
         this.updateDisplay();
         this.renderUpgrades();
         this.renderAchievements();
+    }
+
+    setUsername(username) {
+        if (username && username.trim()) {
+            this.gameState.username = username.trim();
+            this.saveGame();
+            this.updateDisplay();
+            this.showNotification(`Username set to: ${this.gameState.username}`, 'success');
+        }
+    }
+
+    getHighScores() {
+        try {
+            const scores = localStorage.getItem('minecraftClickerHighScores');
+            return scores ? JSON.parse(scores) : [];
+        } catch (error) {
+            console.error('Failed to load high scores:', error);
+            return [];
+        }
+    }
+
+    saveHighScore() {
+        if (!this.gameState.username) {
+            this.showNotification('Please set a username first!', 'error');
+            return;
+        }
+
+        try {
+            const scores = this.getHighScores();
+            const newScore = {
+                username: this.gameState.username,
+                blocks: this.gameState.blocks,
+                totalMined: this.gameState.totalMined,
+                totalClicks: this.gameState.totalClicks,
+                upgradesOwned: this.gameState.upgradesOwned,
+                playTime: this.gameState.playTime,
+                date: new Date().toISOString()
+            };
+
+            // Add new score
+            scores.push(newScore);
+
+            // Sort by total mined (primary) and blocks (secondary)
+            scores.sort((a, b) => {
+                if (b.totalMined !== a.totalMined) {
+                    return b.totalMined - a.totalMined;
+                }
+                return b.blocks - a.blocks;
+            });
+
+            // Keep only top 10 scores
+            const topScores = scores.slice(0, 10);
+
+            localStorage.setItem('minecraftClickerHighScores', JSON.stringify(topScores));
+            
+            // Update personal high score
+            if (this.gameState.totalMined > this.gameState.highScore) {
+                this.gameState.highScore = this.gameState.totalMined;
+                this.saveGame();
+            }
+
+            this.showNotification('High score saved!', 'success');
+        } catch (error) {
+            console.error('Failed to save high score:', error);
+            this.showNotification('Failed to save high score!', 'error');
+        }
+    }
+
+    showHighScores() {
+        const scores = this.getHighScores();
+        if (scores.length === 0) {
+            this.showNotification('No high scores yet!', 'info');
+            return;
+        }
+
+        let message = '🏆 HIGH SCORES 🏆\n\n';
+        scores.forEach((score, index) => {
+            const rank = index + 1;
+            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+            message += `${medal} ${score.username}\n`;
+            message += `   Total Mined: ${this.formatNumber(score.totalMined)}\n`;
+            message += `   Blocks: ${this.formatNumber(score.blocks)}\n`;
+            message += `   Clicks: ${this.formatNumber(score.totalClicks)}\n`;
+            message += `   Tools: ${score.upgradesOwned}\n\n`;
+        });
+
+        alert(message);
     }
 }
 

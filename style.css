@@ -289,6 +289,7 @@ main {
     color: #fff;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     white-space: nowrap;
+    z-index: 5;
 }
 
 .click-text {
@@ -298,10 +299,13 @@ main {
 }
 
 .click-value {
-    margin-top: 15px;
+    margin-top: 25px;
     font-size: 1.1rem;
     color: #ffd700;
     font-weight: 500;
+    text-align: center;
+    position: relative;
+    z-index: 4;
 }
 
 .upgrades-section, .achievements-section {
@@ -402,7 +406,7 @@ main {
     gap: 20px;
 }
 
-.stats-panel, .controls-panel {
+.stats-panel, .controls-panel, .username-panel, .highscore-panel {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     padding: 20px;
@@ -410,7 +414,7 @@ main {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.stats-panel h3, .controls-panel h3 {
+.stats-panel h3, .controls-panel h3, .username-panel h3, .highscore-panel h3 {
     font-size: 1.2rem;
     margin-bottom: 15px;
     color: #4CAF50;
@@ -463,6 +467,62 @@ main {
 
 .control-button.reset:hover {
     background: rgba(244, 67, 54, 0.3);
+}
+
+.username-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.username-input input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.username-input input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.username-input input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.username-input .control-button {
+    width: auto;
+    margin-bottom: 0;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.current-username {
+    font-size: 0.9rem;
+    color: #ffd700;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.personal-highscore {
+    font-size: 0.9rem;
+    color: #4CAF50;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    margin-top: 10px;
 }
 
 .notification {
