@@ -164,8 +164,13 @@ main {
     transition: opacity 0.3s ease;
 }
 
-.pickaxe.active, .mining-robot.active, .automated-mine.active, .quantum-miner.active {
+.pickaxe.active, .mining-robot.active, .automated-mine.active, .quantum-miner.active,
+.pickaxe-army.active, .diamond-legion.active, .netherite-swarm.active, .robot-legion.active,
+.mine-empire.active, .quantum-legion.active, .time-machine.active, .reality-bender.active,
+.dimension-breaker.active, .cosmic-miner.active, .galaxy-crusher.active, .universe-shaper.active,
+.multiverse-harvester.active, .existence-miner.active, .infinity-breaker.active {
     opacity: 1;
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.8));
 }
 
 /* Wooden Pickaxe - positioned at 12 o'clock */
@@ -360,6 +365,32 @@ main {
     height: 230px;
     transform: translate(140px, 25px) rotate(15deg);
     animation: mineFromRight 0.9s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 0, 255, 0.6));
+}
+
+/* Special effects for powerful tools */
+.time-machine.active,
+.reality-bender.active,
+.dimension-breaker.active,
+.cosmic-miner.active,
+.galaxy-crusher.active,
+.universe-shaper.active,
+.multiverse-harvester.active,
+.existence-miner.active,
+.infinity-breaker.active {
+    filter: drop-shadow(0 0 15px rgba(156, 39, 176, 0.8)) !important;
+}
+
+.quantum-legion.active,
+.mine-empire.active,
+.robot-legion.active {
+    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8)) !important;
+}
+
+.pickaxe-army.active,
+.diamond-legion.active,
+.netherite-swarm.active {
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.8)) !important;
 }
 
 /* Mining Animations from different positions */
@@ -686,6 +717,18 @@ main {
 
 .notification.error {
     background: rgba(244, 67, 54, 0.9);
+}
+
+.notification.epic {
+    background: linear-gradient(45deg, rgba(156, 39, 176, 0.9), rgba(255, 0, 255, 0.9));
+    font-weight: 700;
+    font-size: 1.1rem;
+    animation: epicPulse 2s ease-in-out infinite;
+}
+
+@keyframes epicPulse {
+    0%, 100% { transform: translateX(0) scale(1); }
+    50% { transform: translateX(0) scale(1.05); }
 }
 
 /* Responsive Design */

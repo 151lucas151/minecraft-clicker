@@ -606,7 +606,17 @@ class MinecraftClicker {
             this.updateDisplay();
             this.renderUpgrades();
             this.checkAchievements();
-            this.showNotification(`Purchased ${upgrade.name}!`, 'success');
+            
+            // Show special notification for epic upgrades
+            if (upgradeId.includes('army') || upgradeId.includes('legion') || upgradeId.includes('swarm') || 
+                upgradeId.includes('empire') || upgradeId.includes('machine') || upgradeId.includes('bender') ||
+                upgradeId.includes('breaker') || upgradeId.includes('miner') || upgradeId.includes('crusher') ||
+                upgradeId.includes('shaper') || upgradeId.includes('harvester') || upgradeId.includes('existence') ||
+                upgradeId.includes('infinity')) {
+                this.showNotification(`🚀 EPIC UNLOCK: ${upgrade.name}!`, 'epic');
+            } else {
+                this.showNotification(`Purchased ${upgrade.name}!`, 'success');
+            }
         } else {
             this.showNotification('Not enough blocks!', 'error');
         }
