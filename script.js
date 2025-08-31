@@ -80,6 +80,126 @@ class MinecraftClicker {
                 baseCost: 500000,
                 costMultiplier: 1.15,
                 effect: { type: 'passive', value: 10000 }
+            },
+            {
+                id: 'pickaxe_army',
+                name: 'Pickaxe Army',
+                description: 'Deploy 50 pickaxes at once! Produces 50000 blocks per second',
+                baseCost: 2500000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 50000 }
+            },
+            {
+                id: 'diamond_legion',
+                name: 'Diamond Legion',
+                description: 'An army of diamond pickaxes. Produces 250000 blocks per second',
+                baseCost: 10000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 250000 }
+            },
+            {
+                id: 'netherite_swarm',
+                name: 'Netherite Swarm',
+                description: 'Swarm of netherite pickaxes. Produces 1000000 blocks per second',
+                baseCost: 50000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 1000000 }
+            },
+            {
+                id: 'robot_legion',
+                name: 'Robot Legion',
+                description: 'Legion of mining robots. Produces 5000000 blocks per second',
+                baseCost: 250000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 5000000 }
+            },
+            {
+                id: 'mine_empire',
+                name: 'Mine Empire',
+                description: 'An empire of automated mines. Produces 25000000 blocks per second',
+                baseCost: 1000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 25000000 }
+            },
+            {
+                id: 'quantum_legion',
+                name: 'Quantum Legion',
+                description: 'Legion of quantum miners. Produces 100000000 blocks per second',
+                baseCost: 5000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 100000000 }
+            },
+            {
+                id: 'time_machine',
+                name: 'Time Machine',
+                description: 'Mine from the past and future! Produces 500000000 blocks per second',
+                baseCost: 25000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 500000000 }
+            },
+            {
+                id: 'reality_bender',
+                name: 'Reality Bender',
+                description: 'Bend reality to mine blocks! Produces 2500000000 blocks per second',
+                baseCost: 100000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 2500000000 }
+            },
+            {
+                id: 'dimension_breaker',
+                name: 'Dimension Breaker',
+                description: 'Break through dimensions to mine! Produces 10000000000 blocks per second',
+                baseCost: 500000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 10000000000 }
+            },
+            {
+                id: 'cosmic_miner',
+                name: 'Cosmic Miner',
+                description: 'Mine from the cosmos! Produces 50000000000 blocks per second',
+                baseCost: 2500000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 50000000000 }
+            },
+            {
+                id: 'galaxy_crusher',
+                name: 'Galaxy Crusher',
+                description: 'Crush entire galaxies for blocks! Produces 250000000000 blocks per second',
+                baseCost: 10000000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 250000000000 }
+            },
+            {
+                id: 'universe_shaper',
+                name: 'Universe Shaper',
+                description: 'Shape the universe to mine! Produces 1000000000000 blocks per second',
+                baseCost: 50000000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 1000000000000 }
+            },
+            {
+                id: 'multiverse_harvester',
+                name: 'Multiverse Harvester',
+                description: 'Harvest from infinite universes! Produces 5000000000000 blocks per second',
+                baseCost: 250000000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 5000000000000 }
+            },
+            {
+                id: 'existence_miner',
+                name: 'Existence Miner',
+                description: 'Mine the very fabric of existence! Produces 25000000000000 blocks per second',
+                baseCost: 1000000000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 25000000000000 }
+            },
+            {
+                id: 'infinity_breaker',
+                name: 'Infinity Breaker',
+                description: 'Break infinity itself! Produces 100000000000000 blocks per second',
+                baseCost: 5000000000000000,
+                costMultiplier: 1.15,
+                effect: { type: 'passive', value: 100000000000000 }
             }
         ];
 
@@ -616,7 +736,11 @@ class MinecraftClicker {
         // Hide all tools first
         const tools = [
             'woodenPickaxe', 'stonePickaxe', 'ironPickaxe', 'diamondPickaxe', 
-            'netheritePickaxe', 'miningRobot', 'automatedMine', 'quantumMiner'
+            'netheritePickaxe', 'miningRobot', 'automatedMine', 'quantumMiner',
+            'pickaxeArmy', 'diamondLegion', 'netheriteSwarm', 'robotLegion',
+            'mineEmpire', 'quantumLegion', 'timeMachine', 'realityBender',
+            'dimensionBreaker', 'cosmicMiner', 'galaxyCrusher', 'universeShaper',
+            'multiverseHarvester', 'existenceMiner', 'infinityBreaker'
         ];
         
         tools.forEach(toolId => {
@@ -650,6 +774,51 @@ class MinecraftClicker {
         }
         if (this.gameState.upgrades['quantum_miner'] > 0) {
             document.getElementById('quantumMiner').classList.add('active');
+        }
+        if (this.gameState.upgrades['pickaxe_army'] > 0) {
+            document.getElementById('pickaxeArmy').classList.add('active');
+        }
+        if (this.gameState.upgrades['diamond_legion'] > 0) {
+            document.getElementById('diamondLegion').classList.add('active');
+        }
+        if (this.gameState.upgrades['netherite_swarm'] > 0) {
+            document.getElementById('netheriteSwarm').classList.add('active');
+        }
+        if (this.gameState.upgrades['robot_legion'] > 0) {
+            document.getElementById('robotLegion').classList.add('active');
+        }
+        if (this.gameState.upgrades['mine_empire'] > 0) {
+            document.getElementById('mineEmpire').classList.add('active');
+        }
+        if (this.gameState.upgrades['quantum_legion'] > 0) {
+            document.getElementById('quantumLegion').classList.add('active');
+        }
+        if (this.gameState.upgrades['time_machine'] > 0) {
+            document.getElementById('timeMachine').classList.add('active');
+        }
+        if (this.gameState.upgrades['reality_bender'] > 0) {
+            document.getElementById('realityBender').classList.add('active');
+        }
+        if (this.gameState.upgrades['dimension_breaker'] > 0) {
+            document.getElementById('dimensionBreaker').classList.add('active');
+        }
+        if (this.gameState.upgrades['cosmic_miner'] > 0) {
+            document.getElementById('cosmicMiner').classList.add('active');
+        }
+        if (this.gameState.upgrades['galaxy_crusher'] > 0) {
+            document.getElementById('galaxyCrusher').classList.add('active');
+        }
+        if (this.gameState.upgrades['universe_shaper'] > 0) {
+            document.getElementById('universeShaper').classList.add('active');
+        }
+        if (this.gameState.upgrades['multiverse_harvester'] > 0) {
+            document.getElementById('multiverseHarvester').classList.add('active');
+        }
+        if (this.gameState.upgrades['existence_miner'] > 0) {
+            document.getElementById('existenceMiner').classList.add('active');
+        }
+        if (this.gameState.upgrades['infinity_breaker'] > 0) {
+            document.getElementById('infinityBreaker').classList.add('active');
         }
     }
 
