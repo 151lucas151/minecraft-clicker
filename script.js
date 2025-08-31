@@ -13,6 +13,7 @@ class MinecraftClicker {
             upgrades: {},
             achievements: {},
             username: '',
+            password: '',
             highScore: 0
         };
 
@@ -200,6 +201,14 @@ class MinecraftClicker {
                 baseCost: 5000000000000000,
                 costMultiplier: 1.15,
                 effect: { type: 'passive', value: 100000000000000 }
+            },
+            {
+                id: 'rebirth',
+                name: 'Rebirth',
+                description: 'Reset your progress for a permanent 2x multiplier to all production!',
+                baseCost: 10000000000000000,
+                costMultiplier: 1.0,
+                effect: { type: 'rebirth', value: 2 }
             }
         ];
 
@@ -511,16 +520,68 @@ class MinecraftClicker {
             }
         });
 
-        // Username functionality
-        document.getElementById('setUsernameButton').addEventListener('click', () => {
+        // Account functionality
+        document.getElementById('registerButton').addEventListener('click', async () => {
             const username = document.getElementById('usernameInput').value;
-            this.setUsername(username);
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!username || !password) {
+                this.showNotification('Please enter both username and password!', 'error');
+                return;
+            }
+            
+            const result = await this.registerUser(username, password);
+            if (result.success) {
+                this.gameState.username = username;
+                this.gameState.password = password;
+                this.saveGame();
+                this.updateDisplay();
+                this.showNotification('Registration successful!', 'success');
+                this.updateAccountUI();
+            } else {
+                this.showNotification(result.message, 'error');
+            }
+        });
+
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            const username = document.getElementById('usernameInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!username || !password) {
+                this.showNotification('Please enter both username and password!', 'error');
+                return;
+            }
+            
+            const result = await this.loginUser(username, password);
+            if (result.success) {
+                this.gameState.username = username;
+                this.gameState.password = password;
+                this.saveGame();
+                this.updateDisplay();
+                this.showNotification('Login successful!', 'success');
+                this.updateAccountUI();
+            } else {
+                this.showNotification(result.message, 'error');
+            }
         });
 
         document.getElementById('usernameInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const username = e.target.value;
-                this.setUsername(username);
+                const password = document.getElementById('passwordInput').value;
+                if (username && password) {
+                    document.getElementById('loginButton').click();
+                }
+            }
+        });
+
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const username = document.getElementById('usernameInput').value;
+                const password = e.target.value;
+                if (username && password) {
+                    document.getElementById('loginButton').click();
+                }
             }
         });
 
@@ -530,7 +591,16 @@ class MinecraftClicker {
         });
 
         document.getElementById('showHighScoresButton').addEventListener('click', () => {
-            this.showHighScores();
+            window.location.href = 'highscores.html';
+        });
+
+        // Profile and logout buttons
+        document.getElementById('profileButton').addEventListener('click', () => {
+            window.location.href = 'profile.html';
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            this.logout();
         });
 
         // Keyboard shortcuts
@@ -601,6 +671,16 @@ class MinecraftClicker {
                 this.gameState.blocksPerClick += upgrade.effect.value;
             } else if (upgrade.effect.type === 'passive') {
                 this.gameState.blocksPerSecond += upgrade.effect.value;
+            } else if (upgrade.effect.type === 'rebirth') {
+                // Handle rebirth - reset progress but keep multiplier
+                this.gameState.rebirthMultiplier = (this.gameState.rebirthMultiplier || 1) * upgrade.effect.value;
+                this.gameState.blocks = 0;
+                this.gameState.blocksPerClick = 1;
+                this.gameState.blocksPerSecond = 0;
+                this.gameState.upgrades = {};
+                this.gameState.upgradesOwned = 0;
+                this.gameState.achievements = {};
+                this.showNotification(`🌟 REBIRTH COMPLETE! All production multiplied by ${upgrade.effect.value}x!`, 'epic');
             }
 
             this.updateDisplay();
@@ -674,7 +754,7 @@ class MinecraftClicker {
             achievementElement.innerHTML = `
                 <div class="achievement-name">${achievement.name}</div>
                 <div class="achievement-description">${achievement.description}</div>
-                ${unlocked ? '<div class="achievement-reward">Reward: ' + this.formatNumber(achievement.reward) + ' BTC</div>' : ''}
+                ${unlocked ? '<div class="achievement-reward">Reward: ' + this.formatNumber(achievement.reward) + ' Blocks</div>' : ''}
             `;
 
             grid.appendChild(achievementElement);
@@ -740,6 +820,32 @@ class MinecraftClicker {
 
         // Re-render upgrades to update affordability
         this.renderUpgrades();
+        
+        // Update account UI
+        this.updateAccountUI();
+    }
+
+    updateAccountUI() {
+        const loginForm = document.getElementById('loginForm');
+        const userInfo = document.getElementById('userInfo');
+        const currentUsernameElement = document.getElementById('currentUsername');
+        
+        if (this.gameState.username) {
+            loginForm.style.display = 'none';
+            userInfo.style.display = 'block';
+            currentUsernameElement.textContent = `Logged in as: ${this.gameState.username}`;
+        } else {
+            loginForm.style.display = 'block';
+            userInfo.style.display = 'none';
+        }
+    }
+
+    logout() {
+        this.gameState.username = '';
+        this.gameState.password = '';
+        this.saveGame();
+        this.updateDisplay();
+        this.showNotification('Logged out successfully!', 'success');
     }
 
     updateMiningTool() {
@@ -750,7 +856,7 @@ class MinecraftClicker {
             'pickaxeArmy', 'diamondLegion', 'netheriteSwarm', 'robotLegion',
             'mineEmpire', 'quantumLegion', 'timeMachine', 'realityBender',
             'dimensionBreaker', 'cosmicMiner', 'galaxyCrusher', 'universeShaper',
-            'multiverseHarvester', 'existenceMiner', 'infinityBreaker'
+            'multiverseHarvester', 'existenceMiner', 'infinityBreaker', 'rebirth'
         ];
         
         tools.forEach(toolId => {
@@ -830,6 +936,9 @@ class MinecraftClicker {
         if (this.gameState.upgrades['infinity_breaker'] > 0) {
             document.getElementById('infinityBreaker').classList.add('active');
         }
+        if (this.gameState.upgrades['rebirth'] > 0) {
+            document.getElementById('rebirth').classList.add('active');
+        }
     }
 
     startGameLoop() {
@@ -848,7 +957,9 @@ class MinecraftClicker {
         if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
         if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
         if (num < 1000000000000) return (num / 1000000000).toFixed(1) + 'B';
-        return (num / 1000000000000).toFixed(1) + 'T';
+        if (num < 1000000000000000) return (num / 1000000000000).toFixed(1) + 'T';
+        if (num < 1000000000000000000) return (num / 1000000000000000).toFixed(1) + 'Q';
+        return (num / 1000000000000000000).toFixed(1) + 'Qt';
     }
 
     showNotification(message, type = 'success') {
@@ -953,83 +1064,115 @@ class MinecraftClicker {
         }
     }
 
-    getHighScores() {
+    async checkUsernameAvailability(username) {
         try {
-            const scores = localStorage.getItem('minecraftClickerHighScores');
-            return scores ? JSON.parse(scores) : [];
+            const response = await fetch('/api/check-username', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: username.trim() })
+            });
+            const data = await response.json();
+            return data.success && data.available;
+        } catch (error) {
+            console.error('Failed to check username:', error);
+            return false;
+        }
+    }
+
+    async registerUser(username, password) {
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Failed to register user:', error);
+            return { success: false, message: 'Registration failed' };
+        }
+    }
+
+    async loginUser(username, password) {
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Failed to login user:', error);
+            return { success: false, message: 'Login failed' };
+        }
+    }
+
+    async getHighScores() {
+        try {
+            const response = await fetch('/api/highscores');
+            const data = await response.json();
+            return data.success ? data.scores : [];
         } catch (error) {
             console.error('Failed to load high scores:', error);
             return [];
         }
     }
 
-    saveHighScore() {
+    async saveHighScore() {
         if (!this.gameState.username) {
-            this.showNotification('Please set a username first!', 'error');
+            this.showNotification('Please log in first!', 'error');
+            return;
+        }
+
+        if (!this.gameState.password) {
+            this.showNotification('Please log in first!', 'error');
             return;
         }
 
         try {
-            const scores = this.getHighScores();
-            const newScore = {
-                username: this.gameState.username,
-                blocks: this.gameState.blocks,
-                totalMined: this.gameState.totalMined,
-                totalClicks: this.gameState.totalClicks,
-                upgradesOwned: this.gameState.upgradesOwned,
-                playTime: this.gameState.playTime,
-                date: new Date().toISOString()
-            };
-
-            // Add new score
-            scores.push(newScore);
-
-            // Sort by total mined (primary) and blocks (secondary)
-            scores.sort((a, b) => {
-                if (b.totalMined !== a.totalMined) {
-                    return b.totalMined - a.totalMined;
-                }
-                return b.blocks - a.blocks;
+            const response = await fetch('/api/highscores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: this.gameState.username,
+                    password: this.gameState.password,
+                    blocks: this.gameState.blocks,
+                    totalMined: this.gameState.totalMined,
+                    totalClicks: this.gameState.totalClicks,
+                    upgradesOwned: this.gameState.upgradesOwned,
+                    playTime: Math.floor((Date.now() - this.gameState.startTime) / 1000)
+                })
             });
 
-            // Keep only top 10 scores
-            const topScores = scores.slice(0, 10);
-
-            localStorage.setItem('minecraftClickerHighScores', JSON.stringify(topScores));
+            const data = await response.json();
             
-            // Update personal high score
-            if (this.gameState.totalMined > this.gameState.highScore) {
-                this.gameState.highScore = this.gameState.totalMined;
-                this.saveGame();
+            if (data.success) {
+                // Update personal high score
+                if (this.gameState.totalMined > this.gameState.highScore) {
+                    this.gameState.highScore = this.gameState.totalMined;
+                    this.saveGame();
+                }
+                this.showNotification('High score saved!', 'success');
+            } else {
+                this.showNotification(data.message || 'Failed to save high score!', 'error');
             }
-
-            this.showNotification('High score saved!', 'success');
         } catch (error) {
             console.error('Failed to save high score:', error);
             this.showNotification('Failed to save high score!', 'error');
         }
     }
 
-    showHighScores() {
-        const scores = this.getHighScores();
-        if (scores.length === 0) {
-            this.showNotification('No high scores yet!', 'info');
-            return;
-        }
 
-        let message = '🏆 HIGH SCORES 🏆\n\n';
-        scores.forEach((score, index) => {
-            const rank = index + 1;
-            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-            message += `${medal} ${score.username}\n`;
-            message += `   Total Mined: ${this.formatNumber(score.totalMined)}\n`;
-            message += `   Blocks: ${this.formatNumber(score.blocks)}\n`;
-            message += `   Clicks: ${this.formatNumber(score.totalClicks)}\n`;
-            message += `   Tools: ${score.upgradesOwned}\n\n`;
-        });
-
-        alert(message);
-    }
 }
 
 // Initialize the game when the page loads

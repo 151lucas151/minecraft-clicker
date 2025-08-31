@@ -1,206 +1,156 @@
-# Minecraft Clicker Game
+# Minecraft Clicker - Enhanced Version
 
-A Minecraft-themed incremental clicker game where players mine blocks, upgrade their tools, and build an automated mining operation. Created by **Lucas Henry Bishop**.
+A fun incremental mining game where you click to mine blocks and upgrade your mining operation!
 
-## 🎮 Game Overview
+## 🎮 Game Features
 
-Minecraft Clicker is an idle/clicker game that combines the charm of Minecraft with addictive incremental gameplay mechanics. Players start with basic wooden tools and progress through increasingly powerful mining equipment, from stone pickaxes to quantum miners.
+- **Incremental Mining**: Click to mine blocks and earn passive income
+- **25+ Upgrades**: From wooden pickaxes to reality-bending mining tools
+- **Achievement System**: Unlock achievements for various milestones
+- **User Accounts**: Secure registration and login system
+- **High Score Tracking**: Compete with other players globally
+- **Profile Management**: Customize your profile with pictures and settings
+- **Persistent Progress**: Save your game progress locally and in the cloud
 
-### Key Features
-- **Progressive Tool Upgrades**: Wooden → Stone → Iron → Diamond → Netherite → Mining Robot → Automated Mine → Quantum Miner
-- **Automated Mining**: Tools provide passive block generation per second
-- **Achievement System**: Unlock achievements for milestones and progress
-- **Save/Load System**: Persistent game state with local storage
-- **Statistics Tracking**: Monitor your mining progress and efficiency
-- **Responsive Design**: Works on desktop and mobile devices
+## 🆕 Recent Improvements
 
-## 🏗️ Architecture
+### User Account System
+- **Secure Registration**: Create accounts with username, password, and email
+- **Profile Pictures**: Choose from various mining tools as your profile picture
+- **Profile Settings Page**: Manage your account, change passwords, update email
+- **Session Management**: Stay logged in across browser sessions
 
-### Frontend Technologies
-- **HTML5**: Semantic markup and game structure
-- **CSS3**: Modern styling with flexbox/grid layouts and animations
-- **Vanilla JavaScript**: No frameworks - pure ES6+ for optimal performance
-- **Local Storage**: Client-side save/load functionality
+### High Score System
+- **Dedicated High Scores Page**: Beautiful table view of top players
+- **Global Leaderboard**: See how you rank against other miners
+- **Personal Statistics**: Track your best scores and achievements
+- **Real-time Updates**: Refresh scores to see latest rankings
 
-### Game Mechanics
-- **Click-based Mining**: Manual clicking generates blocks
-- **Upgrade System**: Purchase better tools for increased efficiency
-- **Passive Income**: Tools generate blocks automatically over time
-- **Achievement System**: Milestone-based rewards and progression
-- **Economy Balance**: Carefully tuned progression and pricing
+### Enhanced UI/UX
+- **Modern Design**: Clean, responsive interface with smooth animations
+- **Navigation**: Easy access to high scores and profile settings
+- **Notifications**: Real-time feedback for all actions
+- **Mobile Responsive**: Works great on all device sizes
 
-### File Structure
-```
-minecraft-clicker/
-├── index.html          # Main game interface
-├── style.css           # Game styling and animations
-├── script.js           # Core game logic and mechanics
-├── assets/             # Game images and resources
-│   ├── grassblock.jpeg
-│   ├── woodpickaxe.jpeg
-│   ├── stonepicaxe.png
-│   ├── ironpickaxe.jpg
-│   └── ...
-└── README.md           # This file
-```
+## 🚀 Getting Started
 
-## 🚀 Deployment
+1. **Visit the Game**: Navigate to the game URL
+2. **Create Account**: Click "Register" to create your account
+3. **Start Mining**: Click the grass block to begin mining
+4. **Buy Upgrades**: Purchase mining tools to increase your production
+5. **Save Progress**: Your progress is automatically saved
+6. **Compete**: Save high scores and compete with other players
 
-### Standard Nginx Web Server Deployment
+## 🛠️ Technical Features
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/151henry151/minecraft-clicker.git
-   cd minecraft-clicker
-   ```
+### Backend API (Flask)
+- **User Authentication**: Secure password hashing with PBKDF2
+- **Database**: SQLite with proper schema for users and high scores
+- **RESTful API**: Clean endpoints for all game functionality
+- **CORS Support**: Cross-origin requests enabled for web integration
 
-2. **Configure Nginx**
-   Create or edit your nginx configuration file (e.g., `/etc/nginx/sites-available/minecraft-clicker`):
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-       
-       root /path/to/minecraft-clicker;
-       index index.html;
-       
-       location / {
-           try_files $uri $uri/ =404;
-       }
-       
-       # Cache static assets
-       location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg)$ {
-           expires 1y;
-           add_header Cache-Control "public, immutable";
-       }
-       
-       # Security headers
-       add_header X-Frame-Options "SAMEORIGIN" always;
-       add_header X-Content-Type-Options "nosniff" always;
-       add_header X-XSS-Protection "1; mode=block" always;
-   }
-   ```
+### Frontend (Vanilla JavaScript)
+- **No Dependencies**: Pure JavaScript, HTML, and CSS
+- **Local Storage**: Offline progress saving
+- **Real-time Updates**: Live game state management
+- **Responsive Design**: Works on desktop and mobile
 
-3. **Enable the Site**
-   ```bash
-   # Create symlink
-   sudo ln -s /etc/nginx/sites-available/minecraft-clicker /etc/nginx/sites-enabled/
-   
-   # Test configuration
-   sudo nginx -t
-   
-   # Reload nginx
-   sudo systemctl reload nginx
-   ```
+## 📊 Game Statistics
 
-4. **Set Permissions**
-   ```bash
-   sudo chown -R www-data:www-data /path/to/minecraft-clicker
-   sudo chmod -R 755 /path/to/minecraft-clicker
-   ```
-
-### Alternative: Simple HTTP Server (Development)
-```bash
-# Python 3
-python3 -m http.server 8000
-
-# Node.js
-npx serve .
-
-# PHP
-php -S localhost:8000
-```
-
-## 🎯 Game Features
-
-### Mining Tools Progression
-1. **Wooden Pickaxe** - Basic mining tool
-2. **Stone Pickaxe** - Improved efficiency
-3. **Iron Pickaxe** - Significant upgrade
-4. **Diamond Pickaxe** - High-end mining
-5. **Netherite Pickaxe** - Premium tool
-6. **Mining Robot** - Automated mining
-7. **Automated Mine** - Industrial scale
-8. **Quantum Miner** - Ultimate mining technology
-
-### Achievement System
-- **First Steps**: Mine your first block
-- **Tool Collector**: Own multiple pickaxe types
-- **Automation Expert**: Deploy mining robots
-- **Block Master**: Reach high block counts
-- **Speed Demon**: Achieve high mining rates
-
-### Statistics Tracking
+The game tracks various statistics:
 - Total blocks mined
 - Total clicks performed
-- Upgrades purchased
-- Play time tracking
-- Mining efficiency metrics
+- Number of upgrades owned
+- Play time
+- Personal best scores
+- Achievement progress
 
-## 🛠️ Development
+## 🏆 High Score Categories
 
-### Local Development Setup
-1. Clone the repository
-2. Open `index.html` in a web browser
-3. Use browser dev tools for debugging
-4. Local storage saves automatically
+High scores are ranked by:
+1. **Total Blocks Mined**: Your lifetime mining achievement
+2. **Current Blocks**: Your current block balance
+3. **Upgrades Owned**: Number of mining tools purchased
+4. **Play Time**: Time spent in the game
 
-### Browser Compatibility
+## 🔧 API Endpoints
+
+- `POST /api/register` - Create new account
+- `POST /api/login` - User authentication
+- `GET /api/profile` - Get user profile
+- `PUT /api/profile` - Update profile settings
+- `POST /api/change-password` - Change password
+- `GET /api/highscores` - Get global leaderboard
+- `POST /api/highscores` - Save high score
+- `GET /api/health` - API health check
+
+## 🎯 Game Strategy
+
+1. **Early Game**: Focus on click upgrades to increase manual mining
+2. **Mid Game**: Invest in passive income upgrades for steady progress
+3. **Late Game**: Purchase expensive upgrades for exponential growth
+4. **End Game**: Aim for achievements and compete for high scores
+
+## 🔒 Security Features
+
+- **Password Hashing**: PBKDF2 with salt for secure password storage
+- **Input Validation**: All user inputs are validated and sanitized
+- **SQL Injection Protection**: Parameterized queries prevent attacks
+- **XSS Protection**: Content Security Policy headers
+
+## 📱 Browser Compatibility
+
 - Chrome/Chromium (recommended)
 - Firefox
 - Safari
 - Edge
 - Mobile browsers (iOS Safari, Chrome Mobile)
 
-### Performance Considerations
-- Optimized for 60fps gameplay
-- Efficient DOM manipulation
-- Minimal memory footprint
-- Responsive design for all screen sizes
+## 🎨 Customization
 
-## 📱 Mobile Support
+### Profile Pictures
+Choose from various mining tools:
+- Default avatar
+- Wooden pickaxe
+- Stone pickaxe
+- Iron pickaxe
+- Diamond pickaxe
+- Netherite pickaxe
 
-The game is fully responsive and works on mobile devices:
-- Touch-friendly click areas
-- Optimized UI for small screens
-- Swipe gestures for navigation
-- Mobile-optimized performance
+### Game Settings
+- Adjust notification preferences
+- Customize UI themes
+- Set personal goals and targets
 
-## 🔧 Customization
+## 🐛 Troubleshooting
 
-### Modifying Game Balance
-Edit `script.js` to adjust:
-- Tool costs and efficiency
-- Achievement requirements
-- Game progression speed
-- Visual effects and animations
+### Common Issues
+1. **Can't Save High Score**: Make sure you're logged in
+2. **Progress Not Saving**: Check browser local storage permissions
+3. **API Errors**: Verify the backend server is running
+4. **Login Issues**: Ensure username/password are correct
 
-### Adding New Features
-- New mining tools
-- Additional achievements
-- Special events or bonuses
-- Multiplayer features (requires backend)
+### Support
+If you encounter any issues:
+1. Check the browser console for error messages
+2. Verify your internet connection
+3. Try refreshing the page
+4. Clear browser cache if needed
+
+## 🚀 Future Enhancements
+
+Planned features for future updates:
+- **Email Password Reset**: Recover accounts via email
+- **Social Features**: Friend lists and private competitions
+- **More Achievements**: Additional milestones and rewards
+- **Seasonal Events**: Special limited-time content
+- **Advanced Statistics**: Detailed analytics and charts
+- **Mobile App**: Native mobile application
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Please respect the original creator, Lucas Henry Bishop.
-
-## 👨‍💻 Credits
-
-**Created by:** Lucas Henry Bishop
-
-**GitHub Repository:** https://github.com/151henry151/minecraft-clicker
-
-**Live Demo:** https://hromp.com/minecraft-2.0/
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues, feature requests, or pull requests.
-
-## 📞 Support
-
-For questions or support, please open an issue on the GitHub repository.
+This project is open source and available under the MIT License.
 
 ---
 
-*Enjoy mining! ⛏️* 
+**Happy Mining! ⛏️** 
