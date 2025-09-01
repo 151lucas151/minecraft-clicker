@@ -4033,7 +4033,7 @@ main {
     gap: 20px;
 }
 
-.stats-panel, .controls-panel, .username-panel, .highscore-panel {
+.stats-panel, .controls-panel, .username-panel, .highscore-panel, .game-mechanics-panel {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     padding: 20px;
@@ -4041,7 +4041,7 @@ main {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.stats-panel h3, .controls-panel h3, .username-panel h3, .highscore-panel h3 {
+.stats-panel h3, .controls-panel h3, .username-panel h3, .highscore-panel h3, .game-mechanics-panel h3 {
     font-size: 1.2rem;
     margin-bottom: 15px;
     color: #4CAF50;
@@ -4644,4 +4644,84 @@ main {
         opacity: 0;
         transform: translateY(-50px);
     }
+}
+
+/* Progress Bar Styles for Game Mechanics */
+.progress-bar-container {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    height: 24px;
+    width: 150px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
+    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 8px;
+}
+
+.progress-bar.block-health {
+    background: linear-gradient(90deg, #2196F3 0%, #42A5F5 100%);
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Broken tool state */
+#durabilityContainer.broken .progress-bar {
+    background: linear-gradient(90deg, #f44336 0%, #e57373 100%);
+    animation: pulse-broken 1s ease-in-out infinite;
+}
+
+@keyframes pulse-broken {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Mining particle styles */
+.mining-particle {
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* Special notification styles */
+.notification.fortune {
+    background-color: #4CAF50 !important;
+    border-color: #45a049 !important;
+}
+
+.notification.rare {
+    background-color: #9C27B0 !important;
+    border-color: #7B1FA2 !important;
+}
+
+.notification.special {
+    background-color: #FF9800 !important;
+    border-color: #F57C00 !important;
+}
+
+.notification.error {
+    background-color: #f44336 !important;
+    border-color: #da190b !important;
+}
+
+.notification.achievement {
+    background-color: #2196F3 !important;
+    border-color: #1976D2 !important;
 } 

@@ -24,7 +24,26 @@ class MinecraftClicker {
             rebirthCount: 0,
             currentBlockTier: 0,
             currentBlockMultiplier: 1,
-            currentBlockName: 'Grass Block'
+            currentBlockName: 'Grass Block',
+            // Tool durability system
+            toolDurability: {
+                current: 100,
+                max: 100,
+                isBroken: false,
+                lastRepairTick: Date.now()
+            },
+            // Mining speed system
+            miningSpeed: 1.0,
+            miningCooldown: 0,
+            // Block health system
+            currentBlockHealth: 1,
+            maxBlockHealth: 1,
+            blockDamageDealt: 0,
+            // Rare block system
+            rareBlocksFound: 0,
+            specialBlocksFound: [],
+            // Mining power system
+            miningPower: 1.0
         };
         console.log('Game state initialized');
 
@@ -341,6 +360,9 @@ class MinecraftClicker {
         this.startGameLoop();
         console.log('Game loop started');
         
+        // Initialize the first block
+        this.generateNewBlock();
+        
         // Update display after everything is initialized (but don't check achievements yet)
         this.updateDisplayWithoutAchievements();
     }
@@ -533,6 +555,64 @@ class MinecraftClicker {
         
         // Check for achievements
         this.checkAchievements();
+        
+        // Update new game mechanics displays
+        this.updateGameMechanicsDisplay();
+    }
+    
+    updateGameMechanicsDisplay() {
+        // Update tool durability display
+        const durabilityBar = document.getElementById('durabilityBar');
+        const durabilityText = document.getElementById('durabilityText');
+        if (durabilityBar && durabilityText) {
+            const durabilityPercent = (this.gameState.toolDurability.current / this.gameState.toolDurability.max) * 100;
+            durabilityBar.style.width = `${durabilityPercent}%`;
+            durabilityText.textContent = `${Math.floor(this.gameState.toolDurability.current)}/${this.gameState.toolDurability.max}`;
+            
+            // Color code based on durability
+            if (durabilityPercent > 60) {
+                durabilityBar.style.backgroundColor = '#4CAF50';
+            } else if (durabilityPercent > 30) {
+                durabilityBar.style.backgroundColor = '#FF9800';
+            } else {
+                durabilityBar.style.backgroundColor = '#f44336';
+            }
+            
+            // Show broken state
+            const durabilityContainer = document.getElementById('durabilityContainer');
+            if (durabilityContainer) {
+                if (this.gameState.toolDurability.isBroken) {
+                    durabilityContainer.classList.add('broken');
+                } else {
+                    durabilityContainer.classList.remove('broken');
+                }
+            }
+        }
+        
+        // Update block health display
+        const blockHealthBar = document.getElementById('blockHealthBar');
+        const blockHealthText = document.getElementById('blockHealthText');
+        if (blockHealthBar && blockHealthText) {
+            const healthPercent = ((this.gameState.currentBlockHealth - this.gameState.blockDamageDealt) / this.gameState.currentBlockHealth) * 100;
+            blockHealthBar.style.width = `${Math.max(0, healthPercent)}%`;
+            blockHealthText.textContent = `${Math.ceil(this.gameState.currentBlockHealth - this.gameState.blockDamageDealt)}/${this.gameState.currentBlockHealth}`;
+        }
+        
+        // Update special stats
+        const rareBlocksText = document.getElementById('rareBlocksFound');
+        const specialBlocksText = document.getElementById('specialBlocksFound');
+        const miningPowerText = document.getElementById('miningPower');
+        const miningSpeedText = document.getElementById('miningSpeed');
+        
+        if (rareBlocksText) rareBlocksText.textContent = this.gameState.rareBlocksFound || 0;
+        if (specialBlocksText) specialBlocksText.textContent = this.gameState.specialBlocksFound.length || 0;
+        if (miningPowerText) miningPowerText.textContent = `${(this.gameState.miningPower * 100).toFixed(0)}%`;
+        if (miningSpeedText) {
+            const speedMultiplier = this.gameState.enchantments && this.gameState.enchantments.efficiency > 0 
+                ? 1 + (this.gameState.enchantments.efficiency * 0.25) 
+                : 1;
+            miningSpeedText.textContent = `${(speedMultiplier * 100).toFixed(0)}%`;
+        }
     }
 
     updateEnchantmentEffectsDisplay() {
@@ -880,39 +960,142 @@ class MinecraftClicker {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                let blocksToAdd = this.gameState.blocksPerClick;
+                // Check if mining is on cooldown (from mining speed)
+                const now = Date.now();
+                if (this.gameState.miningCooldown > now) {
+                    return; // Still on cooldown
+                }
                 
-                // Apply block tier multiplier from rebirths
-                const blockMultiplier = this.gameState.currentBlockMultiplier || 1;
-                blocksToAdd = Math.floor(blocksToAdd * blockMultiplier);
+                // Check if tool is broken
+                if (this.gameState.toolDurability.isBroken) {
+                    this.showNotification('Your tool is broken! Wait for it to repair.', 'error');
+                    return;
+                }
                 
-                // Apply enchantment effects
-                if (this.gameState.enchantments) {
-                    // Fortune enchantment - chance for bonus blocks
-                    if (this.gameState.enchantments.fortune > 0) {
-                        const fortuneLevel = this.gameState.enchantments.fortune;
-                        const fortuneChance = fortuneLevel * 0.1; // 10% per level
-                        if (Math.random() < fortuneChance) {
-                            blocksToAdd = Math.floor(blocksToAdd * 1.5); // 50% bonus
+                // Calculate mining speed multiplier from Efficiency enchantment
+                let miningSpeedMultiplier = 1.0;
+                if (this.gameState.enchantments && this.gameState.enchantments.efficiency > 0) {
+                    miningSpeedMultiplier = 1 + (this.gameState.enchantments.efficiency * 0.25);
+                }
+                
+                // Set mining cooldown based on speed
+                const baseCooldown = 100; // Base 100ms between clicks
+                this.gameState.miningCooldown = now + (baseCooldown / miningSpeedMultiplier);
+                
+                // Calculate damage to block (for Sharpness enchantment)
+                let damageDealt = 1;
+                if (this.gameState.enchantments && this.gameState.enchantments.sharpness > 0) {
+                    damageDealt = 1 + (this.gameState.enchantments.sharpness * 0.15);
+                }
+                
+                // Apply damage to current block
+                this.gameState.blockDamageDealt += damageDealt;
+                
+                // Check if block is broken
+                let blockBroken = false;
+                if (this.gameState.blockDamageDealt >= this.gameState.currentBlockHealth) {
+                    blockBroken = true;
+                    this.gameState.blockDamageDealt = 0;
+                    
+                    // Generate new block with random health
+                    this.generateNewBlock();
+                }
+                
+                // Only get blocks if the block was broken
+                if (blockBroken) {
+                    let blocksToAdd = this.gameState.blocksPerClick;
+                    
+                    // Apply block tier multiplier from rebirths
+                    const blockMultiplier = this.gameState.currentBlockMultiplier || 1;
+                    blocksToAdd = Math.floor(blocksToAdd * blockMultiplier);
+                    
+                    // Apply Mining Power multiplier (Infinity enchantment)
+                    if (this.gameState.enchantments && this.gameState.enchantments.infinity > 0) {
+                        const infinityMultiplier = 1 + (this.gameState.enchantments.infinity * 0.5);
+                        blocksToAdd = Math.floor(blocksToAdd * infinityMultiplier);
+                        this.gameState.miningPower = infinityMultiplier;
+                    }
+                    
+                    // Apply enchantment effects
+                    if (this.gameState.enchantments) {
+                        // Fortune enchantment - chance for bonus blocks
+                        if (this.gameState.enchantments.fortune > 0) {
+                            const fortuneLevel = this.gameState.enchantments.fortune;
+                            const fortuneChance = fortuneLevel * 0.1; // 10% per level
+                            if (Math.random() < fortuneChance) {
+                                const bonusMultiplier = 1 + (Math.random() * fortuneLevel * 0.5); // Up to 50% bonus per level
+                                blocksToAdd = Math.floor(blocksToAdd * bonusMultiplier);
+                                this.showNotification(`Fortune proc! ${Math.floor((bonusMultiplier - 1) * 100)}% bonus blocks!`, 'fortune');
+                            }
+                        }
+                        
+                        // Looting enchantment - chance for rare blocks
+                        if (this.gameState.enchantments.looting > 0) {
+                            const lootingLevel = this.gameState.enchantments.looting;
+                            const lootingChance = lootingLevel * 0.15; // 15% per level
+                            if (Math.random() < lootingChance) {
+                                // Chance for rare block
+                                const rareBlockTypes = ['Diamond', 'Emerald', 'Gold', 'Iron', 'Coal'];
+                                const rareBlock = rareBlockTypes[Math.floor(Math.random() * rareBlockTypes.length)];
+                                const rareBonus = Math.floor(blocksToAdd * 0.5);
+                                blocksToAdd += rareBonus;
+                                this.gameState.rareBlocksFound++;
+                                this.showNotification(`Rare ${rareBlock} found! +${rareBonus} bonus blocks!`, 'rare');
+                            }
+                        }
+                        
+                        // Silk Touch enchantment - chance for special blocks
+                        if (this.gameState.enchantments.silk_touch > 0) {
+                            const silkTouchChance = 0.05; // 5% chance
+                            if (Math.random() < silkTouchChance) {
+                                const specialBlocks = ['Ancient Debris', 'End Stone', 'Nether Star', 'Dragon Egg'];
+                                const specialBlock = specialBlocks[Math.floor(Math.random() * specialBlocks.length)];
+                                if (!this.gameState.specialBlocksFound.includes(specialBlock)) {
+                                    this.gameState.specialBlocksFound.push(specialBlock);
+                                    const specialBonus = Math.floor(blocksToAdd * 2);
+                                    blocksToAdd += specialBonus;
+                                    this.showNotification(`Special ${specialBlock} collected! +${specialBonus} blocks!`, 'special');
+                                }
+                            }
                         }
                     }
                     
-                    // Looting enchantment - chance for rare drops
-                    if (this.gameState.enchantments.looting > 0) {
-                        const lootingLevel = this.gameState.enchantments.looting;
-                        const lootingChance = lootingLevel * 0.15; // 15% per level
-                        if (Math.random() < lootingChance) {
-                            blocksToAdd = Math.floor(blocksToAdd * 1.3); // 30% bonus
+                    this.gameState.blocks += blocksToAdd;
+                    this.gameState.totalMined += blocksToAdd;
+                }
+                
+                // Tool durability damage
+                if (!this.gameState.toolDurability.isBroken) {
+                    // Calculate durability loss
+                    let durabilityLoss = 1;
+                    
+                    // Unbreaking reduces durability loss
+                    if (this.gameState.enchantments && this.gameState.enchantments.unbreaking > 0) {
+                        const unbreakingLevel = this.gameState.enchantments.unbreaking;
+                        const durabilityReduction = 1 / (1 + unbreakingLevel); // Level 3 = 25% durability loss
+                        if (Math.random() > durabilityReduction) {
+                            durabilityLoss = 0; // Unbreaking proc - no durability loss
                         }
+                    }
+                    
+                    this.gameState.toolDurability.current -= durabilityLoss;
+                    
+                    // Check if tool broke
+                    if (this.gameState.toolDurability.current <= 0) {
+                        this.gameState.toolDurability.current = 0;
+                        this.gameState.toolDurability.isBroken = true;
+                        this.showNotification('Your tool broke! It will repair over time.', 'error');
                     }
                 }
                 
-                this.gameState.blocks += blocksToAdd;
-                this.gameState.totalMined += blocksToAdd;
                 this.gameState.totalClicks += 1;
-                this.gameState.lastClickTime = Date.now();
+                this.gameState.lastClickTime = now;
                 this.updateDisplay();
                 this.checkAchievements();
+                
+                // Visual feedback for mining speed
+                this.animateMiningSpeed(miningSpeedMultiplier);
+                
                 // Auto-save after each click
                 this.autoSave();
             });
@@ -1655,6 +1838,26 @@ class MinecraftClicker {
                 this.gameState.totalMined += this.gameState.blocksPerSecond;
                 console.log(`After adding: ${this.gameState.blocks} blocks`);
             }
+            
+            // Handle tool repair (Mending enchantment)
+            if (this.gameState.toolDurability.isBroken || this.gameState.toolDurability.current < this.gameState.toolDurability.max) {
+                if (this.gameState.enchantments && this.gameState.enchantments.mending > 0) {
+                    const mendingLevel = this.gameState.enchantments.mending;
+                    const repairRate = mendingLevel * 2; // 2 durability per second per level
+                    
+                    this.gameState.toolDurability.current = Math.min(
+                        this.gameState.toolDurability.current + repairRate,
+                        this.gameState.toolDurability.max
+                    );
+                    
+                    // Check if tool is fully repaired
+                    if (this.gameState.toolDurability.isBroken && this.gameState.toolDurability.current >= this.gameState.toolDurability.max) {
+                        this.gameState.toolDurability.isBroken = false;
+                        this.showNotification('Your tool has been repaired!', 'success');
+                    }
+                }
+            }
+            
             this.updateDisplay();
         }, 1000);
 
@@ -1673,14 +1876,129 @@ class MinecraftClicker {
         if (num < 1000000000000000000) return (num / 1000000000000000).toFixed(1) + 'Q';
         return (num / 1000000000000000000).toFixed(1) + 'Qt';
     }
+    
+    generateNewBlock() {
+        // Generate random block health based on current tier and game progress
+        const baseHealth = 1;
+        const tierBonus = this.gameState.currentBlockTier * 0.5;
+        const progressBonus = Math.floor(this.gameState.totalMined / 100000) * 0.1;
+        
+        // Random variation
+        const randomMultiplier = 0.5 + Math.random() * 1.5; // 0.5x to 2x
+        
+        this.gameState.maxBlockHealth = Math.max(1, Math.floor((baseHealth + tierBonus + progressBonus) * randomMultiplier));
+        this.gameState.currentBlockHealth = this.gameState.maxBlockHealth;
+        
+        // Chance for special block types based on tier
+        const blockTypes = [
+            { name: 'Stone', chance: 0.5, healthMultiplier: 1 },
+            { name: 'Iron Ore', chance: 0.2, healthMultiplier: 1.5 },
+            { name: 'Gold Ore', chance: 0.15, healthMultiplier: 2 },
+            { name: 'Diamond Ore', chance: 0.1, healthMultiplier: 3 },
+            { name: 'Obsidian', chance: 0.04, healthMultiplier: 5 },
+            { name: 'Bedrock', chance: 0.01, healthMultiplier: 10 }
+        ];
+        
+        const roll = Math.random();
+        let cumulativeChance = 0;
+        for (const blockType of blockTypes) {
+            cumulativeChance += blockType.chance;
+            if (roll < cumulativeChance) {
+                this.gameState.currentBlockName = blockType.name;
+                this.gameState.currentBlockHealth *= blockType.healthMultiplier;
+                this.gameState.maxBlockHealth = this.gameState.currentBlockHealth;
+                break;
+            }
+        }
+    }
+    
+    animateMiningSpeed(speedMultiplier) {
+        const bitcoinButton = document.getElementById('bitcoinButton');
+        if (bitcoinButton) {
+            // Add visual feedback for faster mining
+            bitcoinButton.style.transform = 'scale(0.95)';
+            const duration = 100 / speedMultiplier;
+            setTimeout(() => {
+                bitcoinButton.style.transform = 'scale(1)';
+            }, duration);
+            
+            // Add particle effect for high speed mining
+            if (speedMultiplier > 1.5) {
+                this.createMiningParticle();
+            }
+        }
+    }
+    
+    createMiningParticle() {
+        const bitcoinButton = document.getElementById('bitcoinButton');
+        if (!bitcoinButton) return;
+        
+        const particle = document.createElement('div');
+        particle.className = 'mining-particle';
+        particle.style.position = 'absolute';
+        particle.style.width = '10px';
+        particle.style.height = '10px';
+        particle.style.backgroundColor = '#ffd700';
+        particle.style.borderRadius = '50%';
+        particle.style.pointerEvents = 'none';
+        particle.style.zIndex = '1000';
+        
+        const rect = bitcoinButton.getBoundingClientRect();
+        const x = rect.left + rect.width / 2 + (Math.random() - 0.5) * 50;
+        const y = rect.top + rect.height / 2;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        
+        document.body.appendChild(particle);
+        
+        // Animate particle
+        particle.animate([
+            { transform: 'translateY(0) scale(1)', opacity: 1 },
+            { transform: 'translateY(-50px) scale(0)', opacity: 0 }
+        ], {
+            duration: 500,
+            easing: 'ease-out'
+        }).onfinish = () => particle.remove();
+    }
 
     showNotification(message, type = 'success') {
         const notification = document.getElementById('notification');
         notification.textContent = message;
         notification.className = `notification ${type} show`;
+        
+        // Add different colors/styles based on type
+        switch(type) {
+            case 'fortune':
+                notification.style.backgroundColor = '#4CAF50';
+                notification.style.borderColor = '#45a049';
+                break;
+            case 'rare':
+                notification.style.backgroundColor = '#9C27B0';
+                notification.style.borderColor = '#7B1FA2';
+                break;
+            case 'special':
+                notification.style.backgroundColor = '#FF9800';
+                notification.style.borderColor = '#F57C00';
+                break;
+            case 'error':
+                notification.style.backgroundColor = '#f44336';
+                notification.style.borderColor = '#da190b';
+                break;
+            case 'achievement':
+                notification.style.backgroundColor = '#2196F3';
+                notification.style.borderColor = '#1976D2';
+                break;
+            default:
+                notification.style.backgroundColor = '#333';
+                notification.style.borderColor = '#555';
+        }
 
         setTimeout(() => {
             notification.classList.remove('show');
+            // Reset styles after hiding
+            notification.style.backgroundColor = '';
+            notification.style.borderColor = '';
         }, 3000);
     }
 
@@ -1739,6 +2057,21 @@ class MinecraftClicker {
                     currentBlockTier: 0,
                     currentBlockMultiplier: 1,
                     currentBlockName: 'Grass Block',
+                    // New game mechanics defaults
+                    toolDurability: {
+                        current: 100,
+                        max: 100,
+                        isBroken: false,
+                        lastRepairTick: Date.now()
+                    },
+                    miningSpeed: 1.0,
+                    miningCooldown: 0,
+                    currentBlockHealth: 1,
+                    maxBlockHealth: 1,
+                    blockDamageDealt: 0,
+                    rareBlocksFound: 0,
+                    specialBlocksFound: [],
+                    miningPower: 1.0,
                     ...loadedState
                 };
                 
