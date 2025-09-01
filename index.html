@@ -115,12 +115,27 @@
                     <div class="click-value">
                         +<span id="clickValue">1</span> Blocks per click
                     </div>
+                    <div class="enchantment-effects" id="enchantmentEffects" style="display: none;">
+                        <div class="effect-indicator" id="fortuneEffect" style="display: none;">
+                            <span class="effect-icon">🍀</span> Fortune Active
+                        </div>
+                        <div class="effect-indicator" id="lootingEffect" style="display: none;">
+                            <span class="effect-icon">💎</span> Looting Active
+                        </div>
+                    </div>
                 </div>
 
                 <div class="upgrades-section">
                     <h2>Mining Tools</h2>
                     <div class="upgrades-grid" id="upgradesGrid">
                         <!-- Upgrades will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="enchantments-section">
+                    <h2>Enchantments</h2>
+                    <div class="enchantments-grid" id="enchantmentsGrid">
+                        <!-- Enchantments will be populated by JavaScript -->
                     </div>
                 </div>
 
@@ -133,25 +148,33 @@
             </div>
 
             <div class="sidebar">
-                <div class="stats-panel">
-                    <h3>Statistics</h3>
-                    <div class="stat-item">
-                        <span class="stat-label">Total Blocks Mined:</span>
-                        <span class="stat-value" id="totalMined">0</span>
+                                    <div class="stats-panel">
+                        <h3>Statistics</h3>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Blocks Mined:</span>
+                            <span class="stat-value" id="totalMined">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Clicks:</span>
+                            <span class="stat-value" id="totalClicks">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Upgrades Owned:</span>
+                            <span class="stat-value" id="upgradesOwned">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Play Time:</span>
+                            <span class="stat-value" id="playTime">0s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Rebirths:</span>
+                            <span class="stat-value" id="rebirthCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Current Block:</span>
+                            <span class="stat-value" id="currentBlockName">Grass Block</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Total Clicks:</span>
-                        <span class="stat-value" id="totalClicks">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Upgrades Owned:</span>
-                        <span class="stat-value" id="upgradesOwned">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Play Time:</span>
-                        <span class="stat-value" id="playTime">0s</span>
-                    </div>
-                </div>
 
                 <div class="controls-panel">
                     <h3>Controls</h3>

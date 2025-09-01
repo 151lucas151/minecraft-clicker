@@ -14,12 +14,17 @@ class MinecraftClicker {
             startTime: Date.now(),
             playTime: 0,
             upgrades: {},
+            enchantments: {},
             achievements: {},
             username: '',
             password: '',
             highScore: 0,
             lastClickTime: 0,
-            sessionStartTime: Date.now()
+            sessionStartTime: Date.now(),
+            rebirthCount: 0,
+            currentBlockTier: 0,
+            currentBlockMultiplier: 1,
+            currentBlockName: 'Grass Block'
         };
         console.log('Game state initialized');
 
@@ -219,6 +224,82 @@ class MinecraftClicker {
             }
         ];
 
+        // Define enchantments array
+        this.enchantments = [
+            {
+                id: 'efficiency',
+                name: 'Efficiency',
+                description: 'Increases mining speed by 25%. Each level adds another 25%.',
+                cost: 1000,
+                costMultiplier: 1.5,
+                effect: { type: 'efficiency', value: 0.25 },
+                maxLevel: 5
+            },
+            {
+                id: 'fortune',
+                name: 'Fortune',
+                description: 'Chance to get bonus blocks when mining. Each level adds 10% chance.',
+                cost: 2500,
+                costMultiplier: 2.0,
+                effect: { type: 'fortune', value: 0.1 },
+                maxLevel: 3
+            },
+            {
+                id: 'unbreaking',
+                name: 'Unbreaking',
+                description: 'Reduces the chance of tools breaking. Each level adds 20% durability.',
+                cost: 1500,
+                costMultiplier: 1.8,
+                effect: { type: 'unbreaking', value: 0.2 },
+                maxLevel: 3
+            },
+            {
+                id: 'mending',
+                name: 'Mending',
+                description: 'Tools repair themselves over time. Each level increases repair rate.',
+                cost: 5000,
+                costMultiplier: 2.5,
+                effect: { type: 'mending', value: 0.1 },
+                maxLevel: 3
+            },
+            {
+                id: 'sharpness',
+                name: 'Sharpness',
+                description: 'Increases damage to blocks. Each level adds 15% damage.',
+                cost: 3000,
+                costMultiplier: 1.7,
+                effect: { type: 'sharpness', value: 0.15 },
+                maxLevel: 5
+            },
+            {
+                id: 'looting',
+                name: 'Looting',
+                description: 'Increases rare block drops. Each level adds 15% rare drop chance.',
+                cost: 4000,
+                costMultiplier: 2.2,
+                effect: { type: 'looting', value: 0.15 },
+                maxLevel: 3
+            },
+            {
+                id: 'silk_touch',
+                name: 'Silk Touch',
+                description: 'Allows mining of special blocks. Each level unlocks new block types.',
+                cost: 10000,
+                costMultiplier: 3.0,
+                effect: { type: 'silk_touch', value: 1 },
+                maxLevel: 1
+            },
+            {
+                id: 'infinity',
+                name: 'Infinity',
+                description: 'Unlimited mining power. Each level adds 50% to all mining stats.',
+                cost: 50000,
+                costMultiplier: 4.0,
+                effect: { type: 'infinity', value: 0.5 },
+                maxLevel: 1
+            }
+        ];
+
         // Define tools array for UI management
         this.tools = [
             'woodenPickaxe', 'stonePickaxe', 'ironPickaxe', 'diamondPickaxe', 'netheritePickaxe',
@@ -253,6 +334,9 @@ class MinecraftClicker {
         console.log('About to render upgrades...');
         this.renderUpgrades();
         console.log('Upgrades rendered');
+        console.log('About to render enchantments...');
+        this.renderEnchantments();
+        console.log('Enchantments rendered');
         console.log('About to start game loop...');
         this.startGameLoop();
         console.log('Game loop started');
@@ -431,6 +515,10 @@ class MinecraftClicker {
         document.getElementById('totalClicks').textContent = this.formatNumber(this.gameState.totalClicks);
         document.getElementById('upgradesOwned').textContent = this.formatNumber(this.gameState.upgradesOwned);
         
+        // Update rebirth stats
+        document.getElementById('rebirthCount').textContent = this.gameState.rebirthCount || 0;
+        document.getElementById('currentBlockName').textContent = this.gameState.currentBlockName || 'Grass Block';
+        
         // Update play time
         const playTimeSeconds = Math.floor((Date.now() - this.gameState.startTime) / 1000);
         this.gameState.playTime = playTimeSeconds;
@@ -438,9 +526,42 @@ class MinecraftClicker {
         
         // Update upgrades availability
         this.renderUpgrades();
+        this.renderEnchantments();
+        
+        // Update enchantment effects display
+        this.updateEnchantmentEffectsDisplay();
         
         // Check for achievements
         this.checkAchievements();
+    }
+
+    updateEnchantmentEffectsDisplay() {
+        const enchantmentEffects = document.getElementById('enchantmentEffects');
+        const fortuneEffect = document.getElementById('fortuneEffect');
+        const lootingEffect = document.getElementById('lootingEffect');
+        
+        if (!enchantmentEffects || !fortuneEffect || !lootingEffect) return;
+        
+        let hasActiveEffects = false;
+        
+        // Check Fortune enchantment
+        if (this.gameState.enchantments && this.gameState.enchantments.fortune > 0) {
+            fortuneEffect.style.display = 'flex';
+            hasActiveEffects = true;
+        } else {
+            fortuneEffect.style.display = 'none';
+        }
+        
+        // Check Looting enchantment
+        if (this.gameState.enchantments && this.gameState.enchantments.looting > 0) {
+            lootingEffect.style.display = 'flex';
+            hasActiveEffects = true;
+        } else {
+            lootingEffect.style.display = 'none';
+        }
+        
+        // Show/hide the container
+        enchantmentEffects.style.display = hasActiveEffects ? 'flex' : 'none';
     }
 
     formatTime(seconds) {
@@ -487,6 +608,230 @@ class MinecraftClicker {
         });
     }
 
+    renderEnchantments() {
+        const enchantmentsGrid = document.getElementById('enchantmentsGrid');
+        if (!enchantmentsGrid) return;
+
+        enchantmentsGrid.innerHTML = '';
+        
+        this.enchantments.forEach(enchantment => {
+            const enchantmentElement = document.createElement('div');
+            enchantmentElement.className = 'enchantment-item';
+            enchantmentElement.id = `enchantment-${enchantment.id}`;
+            
+            const owned = this.gameState.enchantments[enchantment.id] || 0;
+            const cost = this.calculateEnchantmentCost(enchantment, owned);
+            const canAfford = Number(this.gameState.blocks) >= Number(cost);
+            const maxLevelReached = owned >= enchantment.maxLevel;
+            
+            enchantmentElement.innerHTML = `
+                <div class="enchantment-info">
+                    <div class="enchantment-name">${enchantment.name}</div>
+                    <div class="enchantment-description">${enchantment.description}</div>
+                    <div class="enchantment-level">Level: ${owned}/${enchantment.maxLevel}</div>
+                    <div class="enchantment-cost">Cost: ${this.formatNumber(cost)} blocks</div>
+                </div>
+            `;
+            
+            // Add data attribute and styling for clickability
+            enchantmentElement.dataset.enchantmentId = enchantment.id;
+            if (!canAfford || maxLevelReached) {
+                enchantmentElement.classList.add('disabled');
+            }
+            
+            enchantmentsGrid.appendChild(enchantmentElement);
+        });
+    }
+
+    calculateEnchantmentCost(enchantment, owned) {
+        return Math.floor(enchantment.cost * Math.pow(enchantment.costMultiplier, owned));
+    }
+
+    buyEnchantment(enchantmentId) {
+        const enchantment = this.enchantments.find(e => e.id === enchantmentId);
+        if (!enchantment) return;
+
+        const owned = this.gameState.enchantments[enchantmentId] || 0;
+        const cost = this.calculateEnchantmentCost(enchantment, owned);
+
+        // Check if max level reached
+        if (owned >= enchantment.maxLevel) {
+            this.showNotification(`${enchantment.name} is already at maximum level!`, 'warning');
+            return;
+        }
+
+        if (Number(this.gameState.blocks) >= Number(cost)) {
+            this.gameState.blocks -= cost;
+            this.gameState.enchantments[enchantmentId] = (this.gameState.enchantments[enchantmentId] || 0) + 1;
+
+                            // Apply enchantment effect
+                this.applyEnchantmentEffect(enchantment);
+
+                this.updateDisplay();
+                this.renderEnchantments();
+                this.saveGame();
+                this.autoSave();
+                
+                // Show special notification for enchantments
+                const effectText = this.getEnchantmentEffectText(enchantment, owned + 1);
+                this.showNotification(`${enchantment.name} level ${owned + 1} purchased! ${effectText}`, 'success');
+        }
+    }
+
+    applyEnchantmentEffect(enchantment) {
+        // Recalculate all enchantment effects from scratch
+        this.recalculateEnchantmentEffects();
+    }
+
+    recalculateEnchantmentEffects() {
+        // Reset to base values first
+        this.gameState.blocksPerClick = 1;
+        this.gameState.blocksPerSecond = 0;
+        
+        // Apply all upgrade effects first
+        this.upgrades.forEach(upgrade => {
+            const owned = this.gameState.upgrades[upgrade.id] || 0;
+            if (owned > 0) {
+                if (upgrade.effect.type === 'click') {
+                    this.gameState.blocksPerClick += upgrade.effect.value * owned;
+                } else if (upgrade.effect.type === 'passive') {
+                    this.gameState.blocksPerSecond += upgrade.effect.value * owned;
+                }
+            }
+        });
+        
+        // Then apply enchantment effects
+        if (this.gameState.enchantments) {
+            Object.keys(this.gameState.enchantments).forEach(enchantmentId => {
+                const enchantment = this.enchantments.find(e => e.id === enchantmentId);
+                if (enchantment) {
+                    const level = this.gameState.enchantments[enchantmentId];
+                    
+                    switch (enchantment.effect.type) {
+                        case 'efficiency':
+                            // Efficiency increases mining speed
+                            this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * (1 + enchantment.effect.value * level));
+                            break;
+                        case 'sharpness':
+                            // Sharpness increases damage to blocks
+                            this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * (1 + enchantment.effect.value * level));
+                            break;
+                        case 'infinity':
+                            // Infinity provides massive boost to all stats
+                            this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * (1 + enchantment.effect.value * level));
+                            this.gameState.blocksPerSecond = Math.floor(this.gameState.blocksPerSecond * (1 + enchantment.effect.value * level));
+                            break;
+                    }
+                }
+            });
+        }
+        
+        // Finally apply rebirth multipliers
+        const rebirthCount = this.gameState.rebirthCount || 0;
+        if (rebirthCount > 0) {
+            const rebirthMultiplier = Math.pow(2, rebirthCount); // 2x per rebirth
+            this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * rebirthMultiplier);
+            this.gameState.blocksPerSecond = Math.floor(this.gameState.blocksPerSecond * rebirthMultiplier);
+        }
+    }
+
+    getEnchantmentEffectText(enchantment, level) {
+        switch (enchantment.effect.type) {
+            case 'efficiency':
+                return `Mining speed increased by ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'fortune':
+                return `Fortune chance increased to ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'unbreaking':
+                return `Durability increased by ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'mending':
+                return `Repair rate increased by ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'sharpness':
+                return `Damage increased by ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'looting':
+                return `Rare drop chance increased to ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'silk_touch':
+                return `Special blocks unlocked!`;
+            case 'infinity':
+                return `All stats boosted by ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            default:
+                return '';
+        }
+    }
+
+    applyRebirthEffect() {
+        // Increment rebirth count
+        this.gameState.rebirthCount = (this.gameState.rebirthCount || 0) + 1;
+        
+        // Progress to next block tier
+        this.progressToNextBlockTier();
+        
+        // Apply rebirth multiplier to all production
+        this.applyRebirthMultiplier();
+        
+        // Recalculate all effects with rebirth multipliers
+        this.recalculateEnchantmentEffects();
+        
+        // Update the visual block
+        this.updateBlockVisual();
+    }
+
+    progressToNextBlockTier() {
+        const rebirthCount = this.gameState.rebirthCount || 0;
+        
+        // Define block progression tiers
+        const blockTiers = [
+            { name: 'Grass Block', image: 'assets/grassblock.jpeg', multiplier: 1 },
+            { name: 'Stone Block', image: 'assets/grassblock.jpeg', multiplier: 2 }, // Using grass block for now
+            { name: 'Iron Block', image: 'assets/grassblock.jpeg', multiplier: 5 },
+            { name: 'Gold Block', image: 'assets/grassblock.jpeg', multiplier: 10 },
+            { name: 'Diamond Block', image: 'assets/grassblock.jpeg', multiplier: 25 },
+            { name: 'Emerald Block', image: 'assets/grassblock.jpeg', multiplier: 50 },
+            { name: 'Netherite Block', image: 'assets/grassblock.jpeg', multiplier: 100 },
+            { name: 'Obsidian Block', image: 'assets/grassblock.jpeg', multiplier: 250 },
+            { name: 'Bedrock Block', image: 'assets/grassblock.jpeg', multiplier: 500 },
+            { name: 'Void Block', image: 'assets/grassblock.jpeg', multiplier: 1000 }
+        ];
+        
+        // Calculate current tier based on rebirth count
+        const tierIndex = Math.min(Math.floor(rebirthCount / 3), blockTiers.length - 1);
+        this.gameState.currentBlockTier = tierIndex;
+        this.gameState.currentBlockMultiplier = blockTiers[tierIndex].multiplier;
+        this.gameState.currentBlockName = blockTiers[tierIndex].name;
+    }
+
+    applyRebirthMultiplier() {
+        // Instead of multiplying existing values, we'll recalculate everything
+        // This method is called after the rebirth effect is applied
+        // The actual calculation happens in recalculateEnchantmentEffects
+    }
+
+    updateBlockVisual() {
+        const grassBlockImage = document.querySelector('.grass-block-image');
+        if (grassBlockImage) {
+            const tier = this.gameState.currentBlockTier || 0;
+            const blockName = this.gameState.currentBlockName || 'Grass Block';
+            
+            // Update the image source based on tier (for now using the same image)
+            // grassBlockImage.src = this.getBlockImageForTier(tier);
+            
+            // Update the alt text and title
+            grassBlockImage.alt = blockName;
+            grassBlockImage.title = blockName;
+            
+            // Add a special class for visual effects
+            const grassBlock = document.querySelector('.grass-block');
+            if (grassBlock) {
+                grassBlock.className = `grass-block block-tier-${tier}`;
+            }
+        }
+    }
+
+    getBlockImageForTier(tier) {
+        // For now, return the grass block image
+        // In the future, you could add different block images
+        return 'assets/grassblock.jpeg';
+    }
+
     calculateUpgradeCost(upgrade, owned) {
         return Math.floor(upgrade.cost * Math.pow(upgrade.costMultiplier, owned));
     }
@@ -510,6 +855,7 @@ class MinecraftClicker {
                 this.gameState.blocksPerSecond += upgrade.effect.value;
             } else if (upgrade.effect.type === 'rebirth') {
                 // Handle rebirth logic here
+                this.applyRebirthEffect();
                 this.showNotification('Rebirth effect applied!', 'success');
             }
 
@@ -533,8 +879,36 @@ class MinecraftClicker {
                 console.log('Bitcoin button clicked!', e);
                 e.preventDefault();
                 e.stopPropagation();
-                this.gameState.blocks += this.gameState.blocksPerClick;
-                this.gameState.totalMined += this.gameState.blocksPerClick;
+                
+                let blocksToAdd = this.gameState.blocksPerClick;
+                
+                // Apply block tier multiplier from rebirths
+                const blockMultiplier = this.gameState.currentBlockMultiplier || 1;
+                blocksToAdd = Math.floor(blocksToAdd * blockMultiplier);
+                
+                // Apply enchantment effects
+                if (this.gameState.enchantments) {
+                    // Fortune enchantment - chance for bonus blocks
+                    if (this.gameState.enchantments.fortune > 0) {
+                        const fortuneLevel = this.gameState.enchantments.fortune;
+                        const fortuneChance = fortuneLevel * 0.1; // 10% per level
+                        if (Math.random() < fortuneChance) {
+                            blocksToAdd = Math.floor(blocksToAdd * 1.5); // 50% bonus
+                        }
+                    }
+                    
+                    // Looting enchantment - chance for rare drops
+                    if (this.gameState.enchantments.looting > 0) {
+                        const lootingLevel = this.gameState.enchantments.looting;
+                        const lootingChance = lootingLevel * 0.15; // 15% per level
+                        if (Math.random() < lootingChance) {
+                            blocksToAdd = Math.floor(blocksToAdd * 1.3); // 30% bonus
+                        }
+                    }
+                }
+                
+                this.gameState.blocks += blocksToAdd;
+                this.gameState.totalMined += blocksToAdd;
                 this.gameState.totalClicks += 1;
                 this.gameState.lastClickTime = Date.now();
                 this.updateDisplay();
@@ -551,6 +925,15 @@ class MinecraftClicker {
             if (upgradeElement && !upgradeElement.classList.contains('disabled')) {
                 const upgradeId = upgradeElement.dataset.upgradeId;
                 this.buyUpgrade(upgradeId);
+            }
+        });
+
+        // Enchantment cards
+        document.addEventListener('click', (e) => {
+            const enchantmentElement = e.target.closest('.enchantment-item');
+            if (enchantmentElement && !enchantmentElement.classList.contains('disabled')) {
+                const enchantmentId = enchantmentElement.dataset.enchantmentId;
+                this.buyEnchantment(enchantmentId);
             }
         });
 
@@ -1345,12 +1728,17 @@ class MinecraftClicker {
                     startTime: Date.now(),
                     playTime: 0,
                     upgrades: {},
+                    enchantments: {},
                     achievements: {},
                     username: '',
                     password: '',
                     highScore: 0,
                     lastClickTime: 0,
                     sessionStartTime: Date.now(), // Always set to current time for new session
+                    rebirthCount: 0,
+                    currentBlockTier: 0,
+                    currentBlockMultiplier: 1,
+                    currentBlockName: 'Grass Block',
                     ...loadedState
                 };
                 
@@ -1375,8 +1763,15 @@ class MinecraftClicker {
                 this.gameState.startTime = currentTime - (timeSinceSave + (loadedState.playTime || 0));
                 this.gameState.sessionStartTime = currentTime; // Ensure session starts now
                 
+                // Recalculate enchantment effects after loading
+                this.recalculateEnchantmentEffects();
+                
+                // Update block visual after loading
+                this.updateBlockVisual();
+                
                 this.updateDisplayWithoutAchievements();
                 this.renderUpgrades();
+                this.renderEnchantments();
                 this.renderAchievements();
                 return true;
             }
@@ -1409,17 +1804,25 @@ class MinecraftClicker {
             startTime: Date.now(),
             playTime: 0,
             upgrades: {},
+            enchantments: {},
             achievements: perAccountAchievements, // Preserve per_account achievements
             username: this.gameState.username,
             password: this.gameState.password,
             highScore: this.gameState.highScore,
             lastClickTime: 0,
-            sessionStartTime: Date.now() // Reset session start time
+            sessionStartTime: Date.now(), // Reset session start time
+            rebirthCount: 0,
+            currentBlockTier: 0,
+            currentBlockMultiplier: 1,
+            currentBlockName: 'Grass Block'
         };
         
         localStorage.removeItem('minecraftClickerSave');
+        this.recalculateEnchantmentEffects();
+        this.updateBlockVisual();
         this.updateDisplayWithoutAchievements();
         this.renderUpgrades();
+        this.renderEnchantments();
         this.renderAchievements();
         console.log('resetGame() completed');
     }
