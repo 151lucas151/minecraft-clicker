@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>High Scores - Minecraft Clicker</title>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <link rel="stylesheet" href="css/style.css?v=3.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>₿</text></svg>">
     <style>
@@ -243,8 +243,8 @@
                             <td class="rank ${rankClass}">${medal}</td>
                             <td>
                                 <div class="username-cell">
-                                    <img src="${score.profilePicture}" alt="Profile" class="profile-picture" onerror="this.src='default.svg'">
-                                    <span class="username">${score.username}</span>
+                                    <img src="${score.profilePicture}" alt="Profile" class="profile-picture" onerror="this.src='assets/profilepics/default.svg'">
+                                    <span class="username" style="cursor: pointer; text-decoration: underline; color: #3498db;" onclick="viewProfile('${score.username}')">${score.username}</span>
                                 </div>
                             </td>
                             <td class="score-value">${formatNumber(score.totalMined)}</td>
@@ -285,6 +285,10 @@
             }
         }
 
+        function viewProfile(username) {
+            window.location.href = `public-profile.html?username=${encodeURIComponent(username)}`;
+        }
+        
         // Load high scores when page loads
         document.addEventListener('DOMContentLoaded', loadHighScores);
     </script>
