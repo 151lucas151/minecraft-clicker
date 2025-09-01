@@ -278,7 +278,7 @@
             
             try {
                 // Load user's latest game state
-                const response = await fetch(`/api/user/${username}`);
+                const response = await fetch(`/minecraft-2.0/api/user/${username}`);
                 const data = await response.json();
                 
                 if (!data.success) {

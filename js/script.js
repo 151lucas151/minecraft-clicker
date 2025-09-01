@@ -652,7 +652,7 @@ class MinecraftClicker {
         const profileButton = document.getElementById('profileButton');
         if (profileButton) {
             profileButton.addEventListener('click', () => {
-                window.location.href = '/profile.html';
+                window.location.href = '/minecraft-2.0/profile.html';
             });
         }
 
@@ -666,9 +666,9 @@ class MinecraftClicker {
 
         const showHighScoresButton = document.getElementById('showHighScoresButton');
         if (showHighScoresButton) {
-            showHighScoresButton.addEventListener('click', () => {
-                window.location.href = '/highscores.html';
-            });
+                    showHighScoresButton.addEventListener('click', () => {
+            window.location.href = '/minecraft-2.0/highscores.html';
+        });
         }
     }
 
@@ -1435,7 +1435,7 @@ class MinecraftClicker {
 
     async checkUsernameAvailability(username) {
         try {
-            const response = await fetch('/api/check-username', {
+            const response = await fetch('/minecraft-2.0/api/check-username', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1452,7 +1452,7 @@ class MinecraftClicker {
 
     async registerUser(username, password) {
         try {
-            const response = await fetch('/api/register', {
+            const response = await fetch('/minecraft-2.0/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1469,7 +1469,7 @@ class MinecraftClicker {
 
     async loginUser(username, password) {
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch('/minecraft-2.0/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1486,7 +1486,7 @@ class MinecraftClicker {
 
     async getHighScores() {
         try {
-            const response = await fetch('/api/highscores');
+            const response = await fetch('/minecraft-2.0/api/highscores');
             const data = await response.json();
             return data.success ? data.scores : [];
         } catch (error) {
@@ -1507,7 +1507,7 @@ class MinecraftClicker {
         }
 
         try {
-            const response = await fetch('/api/highscores', {
+            const response = await fetch('/minecraft-2.0/api/highscores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

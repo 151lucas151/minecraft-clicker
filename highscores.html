@@ -205,7 +205,7 @@
             contentDiv.innerHTML = '<div class="loading">Loading high scores...</div>';
             
             try {
-                const response = await fetch('/api/highscores');
+                const response = await fetch('/minecraft-2.0/api/highscores');
                 const data = await response.json();
                 
                 if (!data.success) {
@@ -243,7 +243,7 @@
                             <td class="rank ${rankClass}">${medal}</td>
                             <td>
                                 <div class="username-cell">
-                                    <img src="${score.profilePicture}" alt="Profile" class="profile-picture" onerror="this.src='assets/profilepics/default.svg'">
+                                    <img src="assets/profilepics/${score.profilePicture}" alt="Profile" class="profile-picture" onerror="this.src='assets/profilepics/default.svg'">
                                     <span class="username" style="cursor: pointer; text-decoration: underline; color: #3498db;" onclick="viewProfile('${score.username}')">${score.username}</span>
                                 </div>
                             </td>
