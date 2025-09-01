@@ -230,8 +230,8 @@ class MinecraftClicker {
                 id: 'efficiency',
                 name: 'Efficiency',
                 description: 'Increases mining speed by 25%. Each level adds another 25%.',
-                cost: 1000,
-                costMultiplier: 1.5,
+                cost: 10000000000000, // 10T
+                costMultiplier: 3.0,
                 effect: { type: 'efficiency', value: 0.25 },
                 maxLevel: 5
             },
@@ -239,8 +239,8 @@ class MinecraftClicker {
                 id: 'fortune',
                 name: 'Fortune',
                 description: 'Chance to get bonus blocks when mining. Each level adds 10% chance.',
-                cost: 2500,
-                costMultiplier: 2.0,
+                cost: 25000000000000, // 25T
+                costMultiplier: 3.5,
                 effect: { type: 'fortune', value: 0.1 },
                 maxLevel: 3
             },
@@ -248,8 +248,8 @@ class MinecraftClicker {
                 id: 'unbreaking',
                 name: 'Unbreaking',
                 description: 'Reduces the chance of tools breaking. Each level adds 20% durability.',
-                cost: 1500,
-                costMultiplier: 1.8,
+                cost: 15000000000000, // 15T
+                costMultiplier: 3.2,
                 effect: { type: 'unbreaking', value: 0.2 },
                 maxLevel: 3
             },
@@ -257,8 +257,8 @@ class MinecraftClicker {
                 id: 'mending',
                 name: 'Mending',
                 description: 'Tools repair themselves over time. Each level increases repair rate.',
-                cost: 5000,
-                costMultiplier: 2.5,
+                cost: 50000000000000, // 50T
+                costMultiplier: 4.0,
                 effect: { type: 'mending', value: 0.1 },
                 maxLevel: 3
             },
@@ -266,8 +266,8 @@ class MinecraftClicker {
                 id: 'sharpness',
                 name: 'Sharpness',
                 description: 'Increases damage to blocks. Each level adds 15% damage.',
-                cost: 3000,
-                costMultiplier: 1.7,
+                cost: 30000000000000, // 30T
+                costMultiplier: 3.3,
                 effect: { type: 'sharpness', value: 0.15 },
                 maxLevel: 5
             },
@@ -275,8 +275,8 @@ class MinecraftClicker {
                 id: 'looting',
                 name: 'Looting',
                 description: 'Increases rare block drops. Each level adds 15% rare drop chance.',
-                cost: 4000,
-                costMultiplier: 2.2,
+                cost: 40000000000000, // 40T
+                costMultiplier: 3.7,
                 effect: { type: 'looting', value: 0.15 },
                 maxLevel: 3
             },
@@ -284,8 +284,8 @@ class MinecraftClicker {
                 id: 'silk_touch',
                 name: 'Silk Touch',
                 description: 'Allows mining of special blocks. Each level unlocks new block types.',
-                cost: 10000,
-                costMultiplier: 3.0,
+                cost: 100000000000000, // 100T
+                costMultiplier: 5.0,
                 effect: { type: 'silk_touch', value: 1 },
                 maxLevel: 1
             },
@@ -293,8 +293,8 @@ class MinecraftClicker {
                 id: 'infinity',
                 name: 'Infinity',
                 description: 'Unlimited mining power. Each level adds 50% to all mining stats.',
-                cost: 50000,
-                costMultiplier: 4.0,
+                cost: 500000000000000, // 500T
+                costMultiplier: 6.0,
                 effect: { type: 'infinity', value: 0.5 },
                 maxLevel: 1
             }

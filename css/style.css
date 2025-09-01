@@ -3553,6 +3553,23 @@ main {
     display: inline-block;
 }
 
+/* Disabled enchantment styles */
+.enchantment-item.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: linear-gradient(145deg, rgba(138, 43, 226, 0.05), rgba(138, 43, 226, 0.02));
+    border-color: rgba(138, 43, 226, 0.05);
+}
+
+.enchantment-item.disabled:hover {
+    transform: none;
+    background: linear-gradient(145deg, rgba(138, 43, 226, 0.05), rgba(138, 43, 226, 0.02));
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.05);
+    border-color: rgba(138, 43, 226, 0.05);
+}
+
 .achievement-item {
     background: rgba(76, 175, 80, 0.1);
     border: 1px solid rgba(76, 175, 80, 0.2);
