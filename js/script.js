@@ -25,13 +25,16 @@ class MinecraftClicker {
             currentBlockTier: 0,
             currentBlockMultiplier: 1,
             currentBlockName: 'Grass Block',
-            // Tool durability system
+            // Individual tool durability system
             toolDurability: {
-                current: 100,
-                max: 100,
-                isBroken: false,
-                lastRepairTick: Date.now()
+                wooden_pickaxe: { current: 0, max: 60, isBroken: false },
+                stone_pickaxe: { current: 0, max: 132, isBroken: false },
+                iron_pickaxe: { current: 0, max: 251, isBroken: false },
+                diamond_pickaxe: { current: 0, max: 1562, isBroken: false },
+                netherite_pickaxe: { current: 0, max: 2032, isBroken: false }
             },
+            // Current active tool
+            activeTool: null,
             // Mining speed system
             miningSpeed: 1.0,
             miningCooldown: 0,
@@ -39,6 +42,13 @@ class MinecraftClicker {
             currentBlockHealth: 1,
             maxBlockHealth: 1,
             blockDamageDealt: 0,
+            // Block properties system
+            currentBlockReward: 1,
+            currentBlockRequiredTool: null,
+            currentBlockColor: '#8B4513',
+            currentBlockImage: 'assets/blocks/grass.png',
+            canMineCurrentBlock: true,
+            miningBlockedReason: null,
             // Rare block system
             rareBlocksFound: 0,
             specialBlocksFound: [],
@@ -243,8 +253,35 @@ class MinecraftClicker {
             }
         ];
 
-        // Define enchantments array
+        // Define enchantments array (sorted by price from lowest to highest)
         this.enchantments = [
+            {
+                id: 'mending',
+                name: 'Mending',
+                description: 'Tools repair themselves over time. Each level increases repair rate.',
+                cost: 100000, // 100k - Early game pricing
+                costMultiplier: 1.5,
+                effect: { type: 'mending', value: 0.1 },
+                maxLevel: 3
+            },
+            {
+                id: 'unbreaking',
+                name: 'Unbreaking',
+                description: 'Reduces the chance of tools breaking. Each level adds 20% durability.',
+                cost: 120000, // 120k - Early game pricing
+                costMultiplier: 1.5,
+                effect: { type: 'unbreaking', value: 0.2 },
+                maxLevel: 3
+            },
+            {
+                id: 'amplification',
+                name: 'Amplification',
+                description: 'Makes pickaxe tools 3x more powerful. Each level multiplies by another 3x.',
+                cost: 10000000, // 10M - Mid-game pricing
+                costMultiplier: 2.0,
+                effect: { type: 'amplification', value: 3.0 },
+                maxLevel: 3
+            },
             {
                 id: 'efficiency',
                 name: 'Efficiency',
@@ -255,33 +292,6 @@ class MinecraftClicker {
                 maxLevel: 5
             },
             {
-                id: 'fortune',
-                name: 'Fortune',
-                description: 'Chance to get bonus blocks when mining. Each level adds 10% chance.',
-                cost: 25000000000000, // 25T
-                costMultiplier: 3.5,
-                effect: { type: 'fortune', value: 0.1 },
-                maxLevel: 3
-            },
-            {
-                id: 'unbreaking',
-                name: 'Unbreaking',
-                description: 'Reduces the chance of tools breaking. Each level adds 20% durability.',
-                cost: 15000000000000, // 15T
-                costMultiplier: 3.2,
-                effect: { type: 'unbreaking', value: 0.2 },
-                maxLevel: 3
-            },
-            {
-                id: 'mending',
-                name: 'Mending',
-                description: 'Tools repair themselves over time. Each level increases repair rate.',
-                cost: 50000000000000, // 50T
-                costMultiplier: 4.0,
-                effect: { type: 'mending', value: 0.1 },
-                maxLevel: 3
-            },
-            {
                 id: 'sharpness',
                 name: 'Sharpness',
                 description: 'Increases damage to blocks. Each level adds 15% damage.',
@@ -289,6 +299,15 @@ class MinecraftClicker {
                 costMultiplier: 3.3,
                 effect: { type: 'sharpness', value: 0.15 },
                 maxLevel: 5
+            },
+            {
+                id: 'fortune',
+                name: 'Fortune',
+                description: 'Chance to get bonus blocks when mining. Each level adds 10% chance.',
+                cost: 25000000000000, // 25T
+                costMultiplier: 3.5,
+                effect: { type: 'fortune', value: 0.1 },
+                maxLevel: 3
             },
             {
                 id: 'looting',
@@ -530,7 +549,24 @@ class MinecraftClicker {
         // Update main display
         document.getElementById('bitcoinAmount').textContent = this.formatNumber(this.gameState.blocks);
         document.getElementById('bitcoinRate').textContent = this.formatNumber(this.gameState.blocksPerSecond);
-        document.getElementById('clickValue').textContent = this.formatNumber(this.gameState.blocksPerClick);
+        
+        // Update click value display with tool information
+        const clickValueElement = document.getElementById('clickValue');
+        const clickValueTextElement = document.querySelector('.click-value');
+        if (clickValueElement) {
+            if (this.gameState.activeTool) {
+                clickValueElement.textContent = this.formatNumber(this.gameState.blocksPerClick);
+                if (clickValueTextElement) {
+                    clickValueTextElement.innerHTML = `+<span id="clickValue">${this.formatNumber(this.gameState.blocksPerClick)}</span> Blocks per click`;
+                }
+            } else {
+                // Show bare-handed mining
+                clickValueElement.textContent = '1';
+                if (clickValueTextElement) {
+                    clickValueTextElement.innerHTML = `+<span id="clickValue">1</span> Blocks per click (Bare Hands)`;
+                }
+            }
+        }
         
         // Update statistics
         document.getElementById('totalMined').textContent = this.formatNumber(this.gameState.totalMined);
@@ -558,6 +594,12 @@ class MinecraftClicker {
         
         // Update new game mechanics displays
         this.updateGameMechanicsDisplay();
+        
+        // Update block information and skip button
+        this.updateBlockDisplay();
+        
+        // Update block image on mining button
+        this.updateBlockImage();
     }
     
     updateGameMechanicsDisplay() {
@@ -565,26 +607,41 @@ class MinecraftClicker {
         const durabilityBar = document.getElementById('durabilityBar');
         const durabilityText = document.getElementById('durabilityText');
         if (durabilityBar && durabilityText) {
-            const durabilityPercent = (this.gameState.toolDurability.current / this.gameState.toolDurability.max) * 100;
-            durabilityBar.style.width = `${durabilityPercent}%`;
-            durabilityText.textContent = `${Math.floor(this.gameState.toolDurability.current)}/${this.gameState.toolDurability.max}`;
-            
-            // Color code based on durability
-            if (durabilityPercent > 60) {
-                durabilityBar.style.backgroundColor = '#4CAF50';
-            } else if (durabilityPercent > 30) {
-                durabilityBar.style.backgroundColor = '#FF9800';
-            } else {
-                durabilityBar.style.backgroundColor = '#f44336';
-            }
-            
-            // Show broken state
-            const durabilityContainer = document.getElementById('durabilityContainer');
-            if (durabilityContainer) {
-                if (this.gameState.toolDurability.isBroken) {
-                    durabilityContainer.classList.add('broken');
+            if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool]) {
+                const toolDurability = this.gameState.toolDurability[this.gameState.activeTool];
+                const durabilityPercent = (toolDurability.current / toolDurability.max) * 100;
+                durabilityBar.style.width = `${durabilityPercent}%`;
+                durabilityText.textContent = `${Math.floor(toolDurability.current)}/${toolDurability.max}`;
+                
+                // Color code based on durability
+                if (durabilityPercent > 60) {
+                    durabilityBar.style.backgroundColor = '#4CAF50';
+                } else if (durabilityPercent > 30) {
+                    durabilityBar.style.backgroundColor = '#FF9800';
                 } else {
+                    durabilityBar.style.backgroundColor = '#f44336';
+                }
+                
+                // Show broken state
+                const durabilityContainer = document.getElementById('durabilityContainer');
+                if (durabilityContainer) {
+                    if (toolDurability.isBroken) {
+                        durabilityContainer.classList.add('broken');
+                    } else {
+                        durabilityContainer.classList.remove('broken');
+                    }
+                }
+            } else {
+                // No active tool
+                durabilityBar.style.width = '0%';
+                durabilityText.textContent = 'Bare Hands';
+                durabilityBar.style.backgroundColor = '#ccc';
+                
+                const durabilityContainer = document.getElementById('durabilityContainer');
+                if (durabilityContainer) {
                     durabilityContainer.classList.remove('broken');
+                    // Add a helpful tooltip or class for bare hands
+                    durabilityContainer.title = 'No tools equipped - mining with bare hands at 1 block per click';
                 }
             }
         }
@@ -667,7 +724,37 @@ class MinecraftClicker {
             const cost = this.calculateUpgradeCost(upgrade, owned);
             const canAfford = Number(this.gameState.blocks) >= Number(cost);
             
-
+            // Check if this is a pickaxe tool
+            const isPickaxeTool = ['wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'diamond_pickaxe', 'netherite_pickaxe'].includes(upgrade.id);
+            const isActiveTool = this.gameState.activeTool === upgrade.id;
+            const toolDurability = isPickaxeTool ? this.gameState.toolDurability[upgrade.id] : null;
+            const isBroken = toolDurability ? toolDurability.isBroken : false;
+            const needsRepair = toolDurability ? toolDurability.current < toolDurability.max : false;
+            
+            let durabilityInfo = '';
+            let actionButtons = '';
+            
+            if (isPickaxeTool && owned > 0) {
+                const durabilityPercent = (toolDurability.current / toolDurability.max) * 100;
+                const durabilityColor = durabilityPercent > 60 ? '#4CAF50' : durabilityPercent > 30 ? '#FF9800' : '#f44336';
+                
+                durabilityInfo = `
+                    <div class="tool-durability">
+                        <div class="durability-bar">
+                            <div class="durability-fill" style="width: ${durabilityPercent}%; background-color: ${durabilityColor};"></div>
+                        </div>
+                        <div class="durability-text">${Math.floor(toolDurability.current)}/${toolDurability.max}</div>
+                    </div>
+                `;
+                
+                if (isBroken) {
+                    actionButtons = `<button class="repair-button" onclick="game.repairTool('${upgrade.id}')">Repair</button>`;
+                } else if (isActiveTool) {
+                    actionButtons = `<span class="active-tool-indicator">Active Tool</span>`;
+                } else {
+                    actionButtons = `<button class="switch-button" onclick="game.switchTool('${upgrade.id}')">Switch To</button>`;
+                }
+            }
             
             upgradeElement.innerHTML = `
                 <div class="upgrade-info">
@@ -675,6 +762,8 @@ class MinecraftClicker {
                     <div class="upgrade-description">${upgrade.description}</div>
                     <div class="upgrade-owned">Owned: ${owned}</div>
                     <div class="upgrade-cost">Cost: ${this.formatNumber(cost)} blocks</div>
+                    ${durabilityInfo}
+                    ${actionButtons}
                 </div>
             `;
             
@@ -682,6 +771,11 @@ class MinecraftClicker {
             upgradeElement.dataset.upgradeId = upgrade.id;
             if (!canAfford) {
                 upgradeElement.classList.add('disabled');
+            }
+            
+            // Add special styling for broken tools
+            if (isBroken) {
+                upgradeElement.classList.add('broken-tool');
             }
             
             upgradesGrid.appendChild(upgradeElement);
@@ -780,6 +874,9 @@ class MinecraftClicker {
             }
         });
         
+        // Ensure minimum mining power for bare-handed mining
+        this.gameState.blocksPerClick = Math.max(1, this.gameState.blocksPerClick);
+        
         // Then apply enchantment effects
         if (this.gameState.enchantments) {
             Object.keys(this.gameState.enchantments).forEach(enchantmentId => {
@@ -800,6 +897,13 @@ class MinecraftClicker {
                             // Infinity provides massive boost to all stats
                             this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * (1 + enchantment.effect.value * level));
                             this.gameState.blocksPerSecond = Math.floor(this.gameState.blocksPerSecond * (1 + enchantment.effect.value * level));
+                            break;
+                        case 'amplification':
+                            // Amplification multiplies pickaxe tool strength by 3x per level
+                            // This affects the base pickaxe upgrades, not passive income
+                            const beforeAmplification = this.gameState.blocksPerClick;
+                            this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * Math.pow(enchantment.effect.value, level));
+                            console.log(`Amplification level ${level}: ${beforeAmplification} -> ${this.gameState.blocksPerClick} (${Math.pow(enchantment.effect.value, level)}x multiplier)`);
                             break;
                     }
                 }
@@ -833,6 +937,8 @@ class MinecraftClicker {
                 return `Special blocks unlocked!`;
             case 'infinity':
                 return `All stats boosted by ${Math.floor(enchantment.effect.value * level * 100)}%`;
+            case 'amplification':
+                return `Pickaxe strength multiplied by ${Math.pow(enchantment.effect.value, level)}x!`;
             default:
                 return '';
         }
@@ -860,16 +966,16 @@ class MinecraftClicker {
         
         // Define block progression tiers
         const blockTiers = [
-            { name: 'Grass Block', image: 'assets/grassblock.jpeg', multiplier: 1 },
-            { name: 'Stone Block', image: 'assets/grassblock.jpeg', multiplier: 2 }, // Using grass block for now
-            { name: 'Iron Block', image: 'assets/grassblock.jpeg', multiplier: 5 },
-            { name: 'Gold Block', image: 'assets/grassblock.jpeg', multiplier: 10 },
-            { name: 'Diamond Block', image: 'assets/grassblock.jpeg', multiplier: 25 },
-            { name: 'Emerald Block', image: 'assets/grassblock.jpeg', multiplier: 50 },
-            { name: 'Netherite Block', image: 'assets/grassblock.jpeg', multiplier: 100 },
-            { name: 'Obsidian Block', image: 'assets/grassblock.jpeg', multiplier: 250 },
-            { name: 'Bedrock Block', image: 'assets/grassblock.jpeg', multiplier: 500 },
-            { name: 'Void Block', image: 'assets/grassblock.jpeg', multiplier: 1000 }
+            { name: 'Grass Block', image: 'assets/blocks/grass.png', multiplier: 1 },
+            { name: 'Stone Block', image: 'assets/blocks/cobblestone.png', multiplier: 2 },
+            { name: 'Iron Block', image: 'assets/blocks/iron.png', multiplier: 5 },
+            { name: 'Gold Block', image: 'assets/blocks/gold.png', multiplier: 10 },
+            { name: 'Diamond Block', image: 'assets/blocks/diamond.png', multiplier: 25 },
+            { name: 'Emerald Block', image: 'assets/blocks/emerald.png', multiplier: 50 },
+            { name: 'Netherite Block', image: 'assets/blocks/netherite.png', multiplier: 100 },
+            { name: 'Obsidian Block', image: 'assets/blocks/cobblestone.png', multiplier: 250 }, // Using cobblestone for obsidian
+            { name: 'Bedrock Block', image: 'assets/blocks/cobblestone.png', multiplier: 500 }, // Using cobblestone for bedrock
+            { name: 'Void Block', image: 'assets/blocks/netherite.png', multiplier: 1000 } // Using netherite for void
         ];
         
         // Calculate current tier based on rebirth count
@@ -907,9 +1013,20 @@ class MinecraftClicker {
     }
 
     getBlockImageForTier(tier) {
-        // For now, return the grass block image
-        // In the future, you could add different block images
-        return 'assets/grassblock.jpeg';
+        // Return the appropriate block image based on tier
+        const blockTiers = [
+            'assets/blocks/grass.png',
+            'assets/blocks/cobblestone.png',
+            'assets/blocks/iron.png',
+            'assets/blocks/gold.png',
+            'assets/blocks/diamond.png',
+            'assets/blocks/emerald.png',
+            'assets/blocks/netherite.png',
+            'assets/blocks/cobblestone.png', // Obsidian
+            'assets/blocks/cobblestone.png', // Bedrock
+            'assets/blocks/netherite.png'    // Void
+        ];
+        return blockTiers[tier] || 'assets/blocks/grass.png';
     }
 
     calculateUpgradeCost(upgrade, owned) {
@@ -928,6 +1045,23 @@ class MinecraftClicker {
             this.gameState.upgrades[upgradeId] = (this.gameState.upgrades[upgradeId] || 0) + 1;
             this.gameState.upgradesOwned += 1;
 
+            // Initialize tool durability for pickaxe tools
+            if (upgradeId === 'wooden_pickaxe' || upgradeId === 'stone_pickaxe' || 
+                upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
+                upgradeId === 'netherite_pickaxe') {
+                
+                // Set as active tool if it's the first one purchased
+                if (!this.gameState.activeTool) {
+                    this.gameState.activeTool = upgradeId;
+                }
+                
+                // Initialize durability if this is the first time purchasing this tool
+                if (this.gameState.upgrades[upgradeId] === 1) {
+                    this.gameState.toolDurability[upgradeId].current = this.gameState.toolDurability[upgradeId].max;
+                    this.gameState.toolDurability[upgradeId].isBroken = false;
+                }
+            }
+
             // Apply upgrade effect
             if (upgrade.effect.type === 'click') {
                 this.gameState.blocksPerClick += upgrade.effect.value;
@@ -937,6 +1071,16 @@ class MinecraftClicker {
                 // Handle rebirth logic here
                 this.applyRebirthEffect();
                 this.showNotification('Rebirth effect applied!', 'success');
+            }
+
+            // Recalculate enchantment effects to apply amplification to new tools
+            this.recalculateEnchantmentEffects();
+
+            // Recheck block mineability if this was a tool purchase
+            if (upgradeId === 'wooden_pickaxe' || upgradeId === 'stone_pickaxe' || 
+                upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
+                upgradeId === 'netherite_pickaxe') {
+                this.checkBlockMineability();
             }
 
             this.updateDisplay();
@@ -966,10 +1110,27 @@ class MinecraftClicker {
                     return; // Still on cooldown
                 }
                 
-                // Check if tool is broken
-                if (this.gameState.toolDurability.isBroken) {
-                    this.showNotification('Your tool is broken! Wait for it to repair.', 'error');
+                // Check if tool is broken - allow bare-handed mining if no tools available
+                if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool].isBroken) {
+                    this.showNotification('Your tool is broken! Repair it or buy a new one.', 'error');
                     return;
+                }
+                
+                // Check if player can mine the current block
+                if (!this.gameState.canMineCurrentBlock) {
+                    this.showNotification(this.gameState.miningBlockedReason, 'error');
+                    return;
+                }
+                
+                // If no active tool, use bare hands (1 block per click)
+                if (!this.gameState.activeTool) {
+                    // Ensure base mining power is preserved for bare-handed mining
+                    this.gameState.blocksPerClick = Math.max(1, this.gameState.blocksPerClick);
+                    
+                    // Show helpful message for new players
+                    if (this.gameState.totalClicks === 0) {
+                        this.showNotification('Mining with bare hands! Buy tools to mine faster.', 'info');
+                    }
                 }
                 
                 // Calculate mining speed multiplier from Efficiency enchantment
@@ -1003,7 +1164,8 @@ class MinecraftClicker {
                 
                 // Only get blocks if the block was broken
                 if (blockBroken) {
-                    let blocksToAdd = this.gameState.blocksPerClick;
+                    // Use the block's reward value instead of click value
+                    let blocksToAdd = this.gameState.currentBlockReward || 1;
                     
                     // Apply block tier multiplier from rebirths
                     const blockMultiplier = this.gameState.currentBlockMultiplier || 1;
@@ -1065,7 +1227,7 @@ class MinecraftClicker {
                 }
                 
                 // Tool durability damage
-                if (!this.gameState.toolDurability.isBroken) {
+                if (this.gameState.activeTool && !this.gameState.toolDurability[this.gameState.activeTool].isBroken) {
                     // Calculate durability loss
                     let durabilityLoss = 1;
                     
@@ -1078,13 +1240,16 @@ class MinecraftClicker {
                         }
                     }
                     
-                    this.gameState.toolDurability.current -= durabilityLoss;
+                    this.gameState.toolDurability[this.gameState.activeTool].current -= durabilityLoss;
                     
                     // Check if tool broke
-                    if (this.gameState.toolDurability.current <= 0) {
-                        this.gameState.toolDurability.current = 0;
-                        this.gameState.toolDurability.isBroken = true;
-                        this.showNotification('Your tool broke! It will repair over time.', 'error');
+                    if (this.gameState.toolDurability[this.gameState.activeTool].current <= 0) {
+                        this.gameState.toolDurability[this.gameState.activeTool].current = 0;
+                        this.gameState.toolDurability[this.gameState.activeTool].isBroken = true;
+                        this.showNotification(`Your ${this.gameState.activeTool.replace('_', ' ')} broke! Repair it or buy a new one.`, 'error');
+                        
+                        // Auto-switch to best available tool
+                        this.autoSwitchToBestTool();
                     }
                 }
                 
@@ -1150,6 +1315,14 @@ class MinecraftClicker {
                     this.resetGame();
                     this.showNotification('Game reset!', 'success');
                 }
+            });
+        }
+
+        // Skip block button
+        const skipBlockButton = document.getElementById('skipBlockButton');
+        if (skipBlockButton) {
+            skipBlockButton.addEventListener('click', () => {
+                this.skipBlock();
             });
         }
 
@@ -1840,20 +2013,23 @@ class MinecraftClicker {
             }
             
             // Handle tool repair (Mending enchantment)
-            if (this.gameState.toolDurability.isBroken || this.gameState.toolDurability.current < this.gameState.toolDurability.max) {
-                if (this.gameState.enchantments && this.gameState.enchantments.mending > 0) {
-                    const mendingLevel = this.gameState.enchantments.mending;
-                    const repairRate = mendingLevel * 2; // 2 durability per second per level
-                    
-                    this.gameState.toolDurability.current = Math.min(
-                        this.gameState.toolDurability.current + repairRate,
-                        this.gameState.toolDurability.max
-                    );
-                    
-                    // Check if tool is fully repaired
-                    if (this.gameState.toolDurability.isBroken && this.gameState.toolDurability.current >= this.gameState.toolDurability.max) {
-                        this.gameState.toolDurability.isBroken = false;
-                        this.showNotification('Your tool has been repaired!', 'success');
+            if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool]) {
+                const toolDurability = this.gameState.toolDurability[this.gameState.activeTool];
+                if (toolDurability.isBroken || toolDurability.current < toolDurability.max) {
+                    if (this.gameState.enchantments && this.gameState.enchantments.mending > 0) {
+                        const mendingLevel = this.gameState.enchantments.mending;
+                        const repairRate = mendingLevel * 2; // 2 durability per second per level
+                        
+                        toolDurability.current = Math.min(
+                            toolDurability.current + repairRate,
+                            toolDurability.max
+                        );
+                        
+                        // Check if tool is fully repaired
+                        if (toolDurability.isBroken && toolDurability.current >= toolDurability.max) {
+                            toolDurability.isBroken = false;
+                            this.showNotification(`Your ${this.gameState.activeTool.replace('_', ' ')} has been repaired!`, 'success');
+                        }
                     }
                 }
             }
@@ -1878,37 +2054,186 @@ class MinecraftClicker {
     }
     
     generateNewBlock() {
-        // Generate random block health based on current tier and game progress
-        const baseHealth = 1;
-        const tierBonus = this.gameState.currentBlockTier * 0.5;
-        const progressBonus = Math.floor(this.gameState.totalMined / 100000) * 0.1;
-        
-        // Random variation
-        const randomMultiplier = 0.5 + Math.random() * 1.5; // 0.5x to 2x
-        
-        this.gameState.maxBlockHealth = Math.max(1, Math.floor((baseHealth + tierBonus + progressBonus) * randomMultiplier));
-        this.gameState.currentBlockHealth = this.gameState.maxBlockHealth;
-        
-        // Chance for special block types based on tier
+        // Define block types with proper rarity, health, and mining requirements
         const blockTypes = [
-            { name: 'Stone', chance: 0.5, healthMultiplier: 1 },
-            { name: 'Iron Ore', chance: 0.2, healthMultiplier: 1.5 },
-            { name: 'Gold Ore', chance: 0.15, healthMultiplier: 2 },
-            { name: 'Diamond Ore', chance: 0.1, healthMultiplier: 3 },
-            { name: 'Obsidian', chance: 0.04, healthMultiplier: 5 },
-            { name: 'Bedrock', chance: 0.01, healthMultiplier: 10 }
+            { 
+                name: 'Grass Block', 
+                chance: 0.35, // 35% - most common
+                health: 1,
+                requiredTool: null, // Can mine with bare hands
+                blockReward: 1,
+                color: '#8B4513',
+                image: 'assets/blocks/grass.png'
+            },
+            { 
+                name: 'Dirt Block', 
+                chance: 0.30, // 30% - very common
+                health: 1,
+                requiredTool: null, // Can mine with bare hands
+                blockReward: 1,
+                color: '#8B4513',
+                image: 'assets/blocks/dirt.png'
+            },
+            { 
+                name: 'Cobblestone', 
+                chance: 0.20, // 20% - common
+                health: 2,
+                requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
+                blockReward: 2,
+                color: '#808080',
+                image: 'assets/blocks/cobblestone.png'
+            },
+            { 
+                name: 'Coal Ore', 
+                chance: 0.08, // 8% - uncommon
+                health: 3,
+                requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
+                blockReward: 3,
+                color: '#2F2F2F',
+                image: 'assets/blocks/coal.png'
+            },
+            { 
+                name: 'Iron Ore', 
+                chance: 0.04, // 4% - rare
+                health: 4,
+                requiredTool: 'stone_pickaxe', // Need at least stone pickaxe
+                blockReward: 5,
+                color: '#C0C0C0',
+                image: 'assets/blocks/iron.png'
+            },
+            { 
+                name: 'Gold Ore', 
+                chance: 0.02, // 2% - very rare
+                health: 5,
+                requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
+                blockReward: 8,
+                color: '#FFD700',
+                image: 'assets/blocks/gold.png'
+            },
+            { 
+                name: 'Diamond Ore', 
+                chance: 0.008, // 0.8% - extremely rare
+                health: 6,
+                requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
+                blockReward: 12,
+                color: '#00BFFF',
+                image: 'assets/blocks/diamond.png'
+            },
+            { 
+                name: 'Emerald Ore', 
+                chance: 0.005, // 0.5% - extremely rare
+                health: 7,
+                requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
+                blockReward: 15,
+                color: '#32CD32',
+                image: 'assets/blocks/emerald.png'
+            },
+            { 
+                name: 'Netherite Ore', 
+                chance: 0.001, // 0.1% - ultra rare
+                health: 10,
+                requiredTool: 'diamond_pickaxe', // Need at least diamond pickaxe
+                blockReward: 25,
+                color: '#8B008B',
+                image: 'assets/blocks/netherite.png'
+            }
         ];
         
+        // Generate random block based on chances
         const roll = Math.random();
         let cumulativeChance = 0;
+        let selectedBlock = blockTypes[0]; // Default to grass block
+        
         for (const blockType of blockTypes) {
             cumulativeChance += blockType.chance;
             if (roll < cumulativeChance) {
-                this.gameState.currentBlockName = blockType.name;
-                this.gameState.currentBlockHealth *= blockType.healthMultiplier;
-                this.gameState.maxBlockHealth = this.gameState.currentBlockHealth;
+                selectedBlock = blockType;
                 break;
             }
+        }
+        
+        // Set block properties
+        this.gameState.currentBlockName = selectedBlock.name;
+        this.gameState.currentBlockHealth = selectedBlock.health;
+        this.gameState.maxBlockHealth = selectedBlock.health;
+        this.gameState.blockDamageDealt = 0;
+        this.gameState.currentBlockReward = selectedBlock.blockReward;
+        this.gameState.currentBlockRequiredTool = selectedBlock.requiredTool;
+        this.gameState.currentBlockColor = selectedBlock.color;
+        this.gameState.currentBlockImage = selectedBlock.image;
+        
+        // Check if player can mine this block
+        this.checkBlockMineability();
+        
+        // Update the block image on the mining button
+        this.updateBlockImage();
+        
+        console.log(`Generated block: ${selectedBlock.name} (Health: ${selectedBlock.health}, Required Tool: ${selectedBlock.requiredTool || 'None'})`);
+    }
+    
+    checkBlockMineability() {
+        const requiredTool = this.gameState.currentBlockRequiredTool;
+        
+        if (!requiredTool) {
+            // Can mine with bare hands
+            this.gameState.canMineCurrentBlock = true;
+            this.gameState.miningBlockedReason = null;
+            return;
+        }
+        
+        // Define tool tiers (higher index = better tool)
+        const toolTiers = [
+            'wooden_pickaxe',
+            'stone_pickaxe', 
+            'iron_pickaxe',
+            'diamond_pickaxe',
+            'netherite_pickaxe'
+        ];
+        
+        // Find the required tool's tier
+        const requiredToolTier = toolTiers.indexOf(requiredTool);
+        if (requiredToolTier === -1) {
+            // Unknown tool requirement
+            this.gameState.canMineCurrentBlock = false;
+            this.gameState.miningBlockedReason = `Unknown tool requirement: ${requiredTool}`;
+            return;
+        }
+        
+        // Check if player has any tool of the required tier or better
+        let hasSuitableTool = false;
+        let bestAvailableTool = null;
+        
+        for (let i = requiredToolTier; i < toolTiers.length; i++) {
+            const toolId = toolTiers[i];
+            if (this.gameState.upgrades[toolId] && this.gameState.upgrades[toolId] > 0) {
+                // Check if this tool is broken
+                if (this.gameState.toolDurability[toolId] && !this.gameState.toolDurability[toolId].isBroken) {
+                    hasSuitableTool = true;
+                    bestAvailableTool = toolId;
+                    break;
+                }
+            }
+        }
+        
+        if (hasSuitableTool) {
+            this.gameState.canMineCurrentBlock = true;
+            this.gameState.miningBlockedReason = null;
+            
+            // Auto-switch to the best available tool if current tool is worse
+            if (this.gameState.activeTool) {
+                const currentToolTier = toolTiers.indexOf(this.gameState.activeTool);
+                if (currentToolTier < requiredToolTier || 
+                    (this.gameState.toolDurability[this.gameState.activeTool] && 
+                     this.gameState.toolDurability[this.gameState.activeTool].isBroken)) {
+                    // Switch to a better tool
+                    this.gameState.activeTool = bestAvailableTool;
+                    this.showNotification(`Auto-switched to ${bestAvailableTool.replace('_', ' ')} for better mining!`, 'info');
+                }
+            }
+        } else {
+            this.gameState.canMineCurrentBlock = false;
+            const toolName = requiredTool.replace('_', ' ');
+            this.gameState.miningBlockedReason = `You need a ${toolName} or better to mine ${this.gameState.currentBlockName}!`;
         }
     }
     
@@ -2059,16 +2384,26 @@ class MinecraftClicker {
                     currentBlockName: 'Grass Block',
                     // New game mechanics defaults
                     toolDurability: {
-                        current: 100,
-                        max: 100,
-                        isBroken: false,
-                        lastRepairTick: Date.now()
+                        wooden_pickaxe: { current: 0, max: 60, isBroken: false },
+                        stone_pickaxe: { current: 0, max: 132, isBroken: false },
+                        iron_pickaxe: { current: 0, max: 251, isBroken: false },
+                        diamond_pickaxe: { current: 0, max: 1562, isBroken: false },
+                        netherite_pickaxe: { current: 0, max: 2032, isBroken: false }
                     },
+                    // Current active tool
+                    activeTool: null,
+                    // Mining speed system
                     miningSpeed: 1.0,
                     miningCooldown: 0,
                     currentBlockHealth: 1,
                     maxBlockHealth: 1,
                     blockDamageDealt: 0,
+                    currentBlockReward: 1,
+                    currentBlockRequiredTool: null,
+                    currentBlockColor: '#8B4513',
+                    currentBlockImage: 'assets/blocks/grass.png',
+                    canMineCurrentBlock: true,
+                    miningBlockedReason: null,
                     rareBlocksFound: 0,
                     specialBlocksFound: [],
                     miningPower: 1.0,
@@ -2098,6 +2433,9 @@ class MinecraftClicker {
                 
                 // Recalculate enchantment effects after loading
                 this.recalculateEnchantmentEffects();
+                
+                // Generate a new block and check mineability
+                this.generateNewBlock();
                 
                 // Update block visual after loading
                 this.updateBlockVisual();
@@ -2277,6 +2615,167 @@ class MinecraftClicker {
         }
     }
 
+    // Switch to a different tool
+    switchTool(toolId) {
+        console.log('Attempting to switch to tool:', toolId);
+        console.log('Current upgrades:', this.gameState.upgrades);
+        console.log('Current active tool:', this.gameState.activeTool);
+        
+        if (!this.gameState.upgrades[toolId] || this.gameState.upgrades[toolId] === 0) {
+            this.showNotification('You need to purchase this tool first!', 'error');
+            return;
+        }
+
+        if (this.gameState.toolDurability[toolId].isBroken) {
+            this.showNotification('This tool is broken! Repair it first.', 'error');
+            return;
+        }
+
+        this.gameState.activeTool = toolId;
+        console.log('Switched to tool:', toolId);
+        this.showNotification(`Switched to ${toolId.replace('_', ' ')}!`, 'success');
+        this.updateDisplay();
+        this.saveGame();
+    }
+
+    // Repair a broken tool
+    repairTool(toolId) {
+        console.log('Attempting to repair tool:', toolId);
+        console.log('Current blocks:', this.gameState.blocks);
+        console.log('Tool durability:', this.gameState.toolDurability[toolId]);
+        
+        if (!this.gameState.upgrades[toolId] || this.gameState.upgrades[toolId] === 0) {
+            this.showNotification('You need to purchase this tool first!', 'error');
+            return;
+        }
+
+        const toolDurability = this.gameState.toolDurability[toolId];
+        if (!toolDurability.isBroken) {
+            this.showNotification('This tool is not broken!', 'error');
+            return;
+        }
+
+        // Calculate repair cost (cheaper than buying new)
+        const baseCost = this.upgrades.find(u => u.id === toolId)?.cost || 100;
+        const repairCost = Math.floor(baseCost * 0.3); // 30% of original cost
+        
+        console.log('Repair cost:', repairCost, 'Base cost:', baseCost);
+
+        if (this.gameState.blocks >= repairCost) {
+            this.gameState.blocks -= repairCost;
+            toolDurability.current = toolDurability.max;
+            toolDurability.isBroken = false;
+            
+            console.log('Tool repaired successfully');
+            this.showNotification(`${toolId.replace('_', ' ')} repaired!`, 'success');
+            
+            // Recheck block mineability after repair
+            this.checkBlockMineability();
+            
+            this.updateDisplay();
+            this.saveGame();
+        } else {
+            this.showNotification(`Not enough blocks! Need ${repairCost} blocks to repair.`, 'error');
+        }
+    }
+
+    // Get the best available tool (highest tier that's not broken)
+    getBestAvailableTool() {
+        const toolOrder = ['netherite_pickaxe', 'diamond_pickaxe', 'iron_pickaxe', 'stone_pickaxe', 'wooden_pickaxe'];
+        console.log('Checking tool availability. Tool order:', toolOrder);
+        
+        for (const toolId of toolOrder) {
+            console.log(`Checking ${toolId}: owned=${this.gameState.upgrades[toolId]}, broken=${this.gameState.toolDurability[toolId]?.isBroken}`);
+            if (this.gameState.upgrades[toolId] && this.gameState.upgrades[toolId] > 0) {
+                if (!this.gameState.toolDurability[toolId].isBroken) {
+                    console.log(`Found best available tool: ${toolId}`);
+                    return toolId;
+                }
+            }
+        }
+        console.log('No available tools found');
+        return null;
+    }
+
+    // Auto-switch to best available tool when current one breaks
+    autoSwitchToBestTool() {
+        console.log('Auto-switching to best available tool');
+        console.log('Current active tool:', this.gameState.activeTool);
+        
+        if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool].isBroken) {
+            const bestTool = this.getBestAvailableTool();
+            console.log('Best available tool:', bestTool);
+            
+            if (bestTool) {
+                this.gameState.activeTool = bestTool;
+                this.showNotification(`Auto-switched to ${bestTool.replace('_', ' ')}!`, 'info');
+            } else {
+                this.gameState.activeTool = null;
+                this.showNotification('All your tools are broken! Buy or repair a tool to continue mining.', 'error');
+            }
+        }
+    }
+
+    // Skip to the next block
+    skipBlock() {
+        this.showNotification(`Skipping ${this.gameState.currentBlockName}...`, 'info');
+        this.generateNewBlock();
+        this.updateDisplay();
+        this.saveGame();
+    }
+
+    updateBlockDisplay() {
+        // Update block name in sidebar
+        const blockNameElement = document.getElementById('currentBlockName');
+        if (blockNameElement) {
+            blockNameElement.textContent = this.gameState.currentBlockName || 'Grass Block';
+        }
+        
+        // Update block info display
+        const blockNameInfoElement = document.getElementById('blockName');
+        const blockRequirementElement = document.getElementById('blockRequirement');
+        
+        if (blockNameInfoElement) {
+            blockNameInfoElement.textContent = this.gameState.currentBlockName || 'Grass Block';
+        }
+        
+        if (blockRequirementElement) {
+            if (this.gameState.currentBlockRequiredTool) {
+                const toolName = this.gameState.currentBlockRequiredTool.replace('_', ' ');
+                blockRequirementElement.textContent = `Requires: ${toolName} or better`;
+            } else {
+                blockRequirementElement.textContent = 'Can mine with bare hands';
+            }
+        }
+        
+        // Update skip button
+        const skipBlockButton = document.getElementById('skipBlockButton');
+        if (skipBlockButton) {
+            if (!this.gameState.canMineCurrentBlock) {
+                skipBlockButton.style.display = 'inline-block';
+                skipBlockButton.textContent = `⏭️ Skip ${this.gameState.currentBlockName}`;
+                skipBlockButton.disabled = false;
+            } else {
+                skipBlockButton.style.display = 'none';
+            }
+        }
+    }
+
+    updateBlockImage() {
+        const grassBlockImage = document.querySelector('.grass-block-image');
+        console.log('updateBlockImage called');
+        console.log('grassBlockImage element:', grassBlockImage);
+        console.log('currentBlockImage:', this.gameState.currentBlockImage);
+        
+        if (grassBlockImage && this.gameState.currentBlockImage) {
+            console.log('Updating block image to:', this.gameState.currentBlockImage);
+            grassBlockImage.src = this.gameState.currentBlockImage;
+            grassBlockImage.alt = this.gameState.currentBlockName || 'Block';
+            grassBlockImage.title = this.gameState.currentBlockName || 'Block';
+        } else {
+            console.log('Could not update block image - missing element or image path');
+        }
+    }
 
 }
 
@@ -2284,7 +2783,7 @@ class MinecraftClicker {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Content Loaded - Initializing Minecraft Clicker');
     try {
-        new MinecraftClicker();
+        window.game = new MinecraftClicker();
         console.log('Minecraft Clicker initialized successfully');
     } catch (error) {
         console.error('Error initializing Minecraft Clicker:', error);

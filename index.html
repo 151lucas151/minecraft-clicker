@@ -34,7 +34,7 @@
                 <div class="click-area">
                     <button id="bitcoinButton" class="grass-block-button">
                         <div class="grass-block">
-                            <img src="assets/grassblock.jpeg" alt="Minecraft Grass Block" class="grass-block-image" style="display: block; width: 100%; height: 100%;">
+                            <img src="assets/blocks/grass.png" alt="Minecraft Grass Block" class="grass-block-image" style="display: block; width: 100%; height: 100%;">
                         </div>
                         <div class="mining-tool" id="miningTool">
                             <div class="pickaxe wooden-pickaxe" id="woodenPickaxe">
@@ -114,6 +114,15 @@
                     </button>
                     <div class="click-value">
                         +<span id="clickValue">1</span> Blocks per click
+                    </div>
+                    <div class="block-controls">
+                        <button id="skipBlockButton" class="skip-block-button" style="display: none;">
+                            ⏭️ Skip Block
+                        </button>
+                        <div class="block-info" id="blockInfo">
+                            <span class="block-name" id="blockName">Grass Block</span>
+                            <span class="block-requirement" id="blockRequirement"></span>
+                        </div>
                     </div>
                     <div class="enchantment-effects" id="enchantmentEffects" style="display: none;">
                         <div class="effect-indicator" id="fortuneEffect" style="display: none;">
