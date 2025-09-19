@@ -30,7 +30,7 @@
                         <span class="currency">Blocks/s</span>
                     </div>
                 </div>
-
+                
                 <div class="click-area">
                     <button id="bitcoinButton" class="grass-block-button">
                         <div class="grass-block">
@@ -122,6 +122,7 @@
                         <div class="block-info" id="blockInfo">
                             <span class="block-name" id="blockName">Grass Block</span>
                             <span class="block-requirement" id="blockRequirement"></span>
+                            <span class="block-value" id="blockValue">Value: 1 Block</span>
                         </div>
                     </div>
                     <div class="enchantment-effects" id="enchantmentEffects" style="display: none;">
@@ -130,6 +131,22 @@
                         </div>
                         <div class="effect-indicator" id="lootingEffect" style="display: none;">
                             <span class="effect-icon">💎</span> Looting Active
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="inventory-display collapsed">
+                    <div class="inventory-header" onclick="game.toggleInventory()">
+                        <h3>Block Inventory</h3>
+                        <span class="inventory-toggle">▼</span>
+                    </div>
+                    <div class="inventory-content" id="inventoryContent">
+                        <div class="inventory-grid" id="inventoryGrid">
+                            <!-- Inventory items will be populated here -->
+                        </div>
+                        <div class="inventory-controls">
+                            <button id="sellAllButton" class="sell-all-button">Convert All Blocks</button>
+                            <button id="debugButton" class="debug-button" onclick="game.debugBlockSystem()">Debug Block System</button>
                         </div>
                     </div>
                 </div>

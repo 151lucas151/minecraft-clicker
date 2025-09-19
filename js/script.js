@@ -5,8 +5,7 @@ class MinecraftClicker {
     constructor() {
         console.log('MinecraftClicker constructor starting...');
         this.gameState = {
-            // Bitcoin economy system
-            bitcoins: 0,
+            // Block-based economy system
             blocks: 0,
             blocksPerClick: 1,
             blocksPerSecond: 0,
@@ -61,7 +60,7 @@ class MinecraftClicker {
             currentBlockRequiredTool: null,
             currentBlockColor: '#8B4513',
             currentBlockImage: 'assets/blocks/grass.png',
-            currentBlockBitcoinValue: 0.02,
+            currentBlockBitcoinValue: 1,
             canMineCurrentBlock: true,
             miningBlockedReason: null,
             // Rare block system
@@ -78,46 +77,41 @@ class MinecraftClicker {
                 id: 'wooden_pickaxe',
                 name: 'Wooden Pickaxe',
                 description: 'A basic wooden pickaxe. Adds +1 block per click.',
-                cost: 0.5, // 25 dirt blocks
+                cost: 25, // 25 dirt blocks
                 costMultiplier: 1.15,
-                effect: { type: 'click', value: 1 },
-                costType: 'bitcoin'
+                effect: { type: 'click', value: 1 }
             },
             {
                 id: 'stone_pickaxe',
                 name: 'Stone Pickaxe',
                 description: 'A sturdy stone pickaxe. Adds +5 blocks per click.',
-                cost: 1.0, // 20 cobblestone blocks
+                cost: 50, // 50 cobblestone blocks
                 costMultiplier: 1.15,
-                effect: { type: 'click', value: 5 },
-                costType: 'bitcoin'
+                effect: { type: 'click', value: 5 }
             },
             {
                 id: 'iron_pickaxe',
                 name: 'Iron Pickaxe',
                 description: 'A durable iron pickaxe. Adds +20 blocks per click.',
-                cost: 2.4, // 20 iron ore blocks
+                cost: 100, // 100 iron ore blocks
                 costMultiplier: 1.15,
-                effect: { type: 'click', value: 20 },
-                costType: 'bitcoin'
+                effect: { type: 'click', value: 20 }
             },
             {
                 id: 'diamond_pickaxe',
                 name: 'Diamond Pickaxe',
                 description: 'A powerful diamond pickaxe. Adds +50 blocks per click.',
-                cost: 6.0, // 24 diamond ore blocks
+                cost: 250, // 250 diamond ore blocks
                 costMultiplier: 1.15,
-                effect: { type: 'click', value: 50 },
-                costType: 'bitcoin'
+                effect: { type: 'click', value: 50 }
             },
             {
                 id: 'netherite_pickaxe',
                 name: 'Netherite Pickaxe',
                 description: 'The ultimate pickaxe. Adds +100 blocks per click.',
-                cost: 12.0, // 24 netherite ore blocks
+                cost: 500, // 500 netherite ore blocks
                 costMultiplier: 1.15,
-                effect: { type: 'click', value: 100 },
-                costType: 'bitcoin'
+                effect: { type: 'click', value: 100 }
             },
             {
                 id: 'mining_robot',
@@ -571,7 +565,7 @@ class MinecraftClicker {
 
     updateDisplay() {
         // Update main display
-        document.getElementById('bitcoinAmount').textContent = this.formatNumber(this.gameState.bitcoins);
+        document.getElementById('bitcoinAmount').textContent = this.formatNumber(this.gameState.blocks);
         document.getElementById('bitcoinRate').textContent = this.formatNumber(this.gameState.blocksPerSecond);
         
         // Update click value display with tool information
@@ -636,20 +630,20 @@ class MinecraftClicker {
         inventoryGrid.innerHTML = '';
         
         const blockTypes = [
-            { name: 'Grass Block', image: 'assets/blocks/grass.png', bitcoinValue: 0.02 },
-            { name: 'Dirt Block', image: 'assets/blocks/dirt.png', bitcoinValue: 0.02 },
-            { name: 'Cobblestone', image: 'assets/blocks/cobblestone.png', bitcoinValue: 0.05 },
-            { name: 'Coal Ore', image: 'assets/blocks/coal.png', bitcoinValue: 0.08 },
-            { name: 'Iron Ore', image: 'assets/blocks/iron.png', bitcoinValue: 0.12 },
-            { name: 'Gold Ore', image: 'assets/blocks/gold.png', bitcoinValue: 0.18 },
-            { name: 'Diamond Ore', image: 'assets/blocks/diamond.png', bitcoinValue: 0.25 },
-            { name: 'Emerald Ore', image: 'assets/blocks/emerald.png', bitcoinValue: 0.35 },
-            { name: 'Netherite Ore', image: 'assets/blocks/netherite.png', bitcoinValue: 0.50 }
+            { name: 'Grass Block', image: 'assets/blocks/grass.png', blockValue: 1 },
+            { name: 'Dirt Block', image: 'assets/blocks/dirt.png', blockValue: 1 },
+            { name: 'Cobblestone', image: 'assets/blocks/cobblestone.png', blockValue: 2 },
+            { name: 'Coal Ore', image: 'assets/blocks/coal.png', blockValue: 3 },
+            { name: 'Iron Ore', image: 'assets/blocks/iron.png', blockValue: 5 },
+            { name: 'Gold Ore', image: 'assets/blocks/gold.png', blockValue: 8 },
+            { name: 'Diamond Ore', image: 'assets/blocks/diamond.png', blockValue: 12 },
+            { name: 'Emerald Ore', image: 'assets/blocks/emerald.png', blockValue: 15 },
+            { name: 'Netherite Ore', image: 'assets/blocks/netherite.png', blockValue: 25 }
         ];
         
         blockTypes.forEach(blockType => {
             const quantity = this.gameState.blockInventory[blockType.name] || 0;
-            const totalValue = (blockType.bitcoinValue * quantity).toFixed(2);
+            const totalValue = blockType.blockValue * quantity;
             
             const inventoryItem = document.createElement('div');
             inventoryItem.className = 'inventory-item';
@@ -657,9 +651,9 @@ class MinecraftClicker {
                 <img src="${blockType.image}" alt="${blockType.name}" class="block-image">
                 <div class="block-name">${blockType.name}</div>
                 <div class="block-count">${quantity}</div>
-                <div class="block-value">${blockType.bitcoinValue} BTC each</div>
+                <div class="block-value">${blockType.blockValue} blocks each</div>
                 <button class="sell-button" onclick="game.sellBlock('${blockType.name}', 1)" ${quantity > 0 ? '' : 'disabled'}>
-                    Sell 1
+                    Convert 1
                 </button>
             `;
             
@@ -787,9 +781,7 @@ class MinecraftClicker {
             
             const owned = this.gameState.upgrades[upgrade.id] || 0;
             const cost = this.calculateUpgradeCost(upgrade, owned);
-            const canAfford = upgrade.costType === 'bitcoin' ? 
-                Number(this.gameState.bitcoins) >= Number(cost) : 
-                Number(this.gameState.blocks) >= Number(cost);
+            const canAfford = Number(this.gameState.blocks) >= Number(cost);
             
             // Check if this is a pickaxe tool
             const isPickaxeTool = ['wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'diamond_pickaxe', 'netherite_pickaxe'].includes(upgrade.id);
@@ -828,9 +820,7 @@ class MinecraftClicker {
                     <div class="upgrade-name">${upgrade.name}</div>
                     <div class="upgrade-description">${upgrade.description}</div>
                     <div class="upgrade-owned">Owned: ${owned}</div>
-                    <div class="upgrade-cost">Cost: ${upgrade.costType === 'bitcoin' ? 
-                        `${cost.toFixed(2)} BTC` : 
-                        `${this.formatNumber(cost)} blocks`}</div>
+                    <div class="upgrade-cost">Cost: ${this.formatNumber(cost)} blocks</div>
                     ${durabilityInfo}
                     ${actionButtons}
                 </div>
@@ -1109,83 +1099,70 @@ class MinecraftClicker {
         const owned = this.gameState.upgrades[upgradeId] || 0;
         const cost = this.calculateUpgradeCost(upgrade, owned);
 
-        // Check if player has enough bitcoin
-        if (upgrade.costType === 'bitcoin') {
-            if (Number(this.gameState.bitcoins) >= Number(cost)) {
-                this.gameState.bitcoins -= cost;
-                this.gameState.upgrades[upgradeId] = (this.gameState.upgrades[upgradeId] || 0) + 1;
-                this.gameState.upgradesOwned += 1;
+        // Check if player has enough blocks
+        if (Number(this.gameState.blocks) >= Number(cost)) {
+            this.gameState.blocks -= cost;
+            this.gameState.upgrades[upgradeId] = (this.gameState.upgrades[upgradeId] || 0) + 1;
+            this.gameState.upgradesOwned += 1;
 
-                // Initialize tool durability for pickaxe tools
-                if (upgradeId === 'wooden_pickaxe' || upgradeId === 'stone_pickaxe' || 
-                    upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
-                    upgradeId === 'netherite_pickaxe') {
-                    
-                    // Set as active tool if it's the first one purchased
-                    if (!this.gameState.activeTool) {
-                        this.gameState.activeTool = upgradeId;
-                    }
-                    
-                    // Initialize durability if this is the first time purchasing this tool
-                    if (this.gameState.upgrades[upgradeId] === 1) {
-                        this.gameState.toolDurability[upgradeId].current = this.gameState.toolDurability[upgradeId].max;
-                        this.gameState.toolDurability[upgradeId].isBroken = false;
-                    }
+            // Initialize tool durability for pickaxe tools
+            if (upgradeId === 'wooden_pickaxe' || upgradeId === 'stone_pickaxe' || 
+                upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
+                upgradeId === 'netherite_pickaxe') {
+                
+                // Set as active tool if it's the first one purchased
+                if (!this.gameState.activeTool) {
+                    this.gameState.activeTool = upgradeId;
                 }
-
-                // Apply upgrade effect
-                if (upgrade.effect.type === 'click') {
-                    this.gameState.blocksPerClick += upgrade.effect.value;
-                } else if (upgrade.effect.type === 'passive') {
-                    this.gameState.blocksPerSecond += upgrade.effect.value;
-                } else if (upgrade.effect.type === 'rebirth') {
-                    // Handle rebirth logic here
-                    this.applyRebirthEffect();
-                    this.showNotification('Rebirth effect applied!', 'success');
+                
+                // Initialize durability if this is the first time purchasing this tool
+                if (this.gameState.upgrades[upgradeId] === 1) {
+                    this.gameState.toolDurability[upgradeId].current = this.gameState.toolDurability[upgradeId].max;
+                    this.gameState.toolDurability[upgradeId].isBroken = false;
                 }
-
-                // Recalculate enchantment effects to apply amplification to new tools
-                this.recalculateEnchantmentEffects();
-
-                // Recheck block mineability if this was a tool purchase
-                if (upgradeId === 'wooden_pickaxe' || upgradeId === 'stone_pickaxe' || 
-                    upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
-                    upgradeId === 'netherite_pickaxe') {
-                    this.checkBlockMineability();
-                }
-
-                this.updateDisplay();
-                this.renderUpgrades();
-                this.updateMiningTools();
-                this.saveGame();
-                // Also auto-save to ensure immediate persistence
-                this.autoSave();
-                this.showNotification(`${upgrade.name} purchased!`, 'success');
-            } else {
-                this.showNotification(`Not enough bitcoin! You need ${cost.toFixed(2)} BTC.`, 'error');
             }
+
+            // Apply upgrade effect
+            if (upgrade.effect.type === 'click') {
+                this.gameState.blocksPerClick += upgrade.effect.value;
+            } else if (upgrade.effect.type === 'passive') {
+                this.gameState.blocksPerSecond += upgrade.effect.value;
+            } else if (upgrade.effect.type === 'rebirth') {
+                // Handle rebirth logic here
+                this.applyRebirthEffect();
+                this.showNotification('Rebirth effect applied!', 'success');
+            }
+
+            // Recalculate enchantment effects to apply amplification to new tools
+            this.recalculateEnchantmentEffects();
+
+            // Recheck block mineability if this was a tool purchase
+            if (upgradeId === 'wooden_pickaxe' || upgradeId === 'stone_pickaxe' || 
+                upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
+                upgradeId === 'netherite_pickaxe') {
+                this.checkBlockMineability();
+            }
+
+            this.updateDisplay();
+            this.renderUpgrades();
+            this.updateMiningTools();
+            this.saveGame();
+            // Also auto-save to ensure immediate persistence
+            this.autoSave();
+            this.showNotification(`${upgrade.name} purchased!`, 'success');
         } else {
-            // Fallback for old upgrades that don't have costType
-            if (Number(this.gameState.blocks) >= Number(cost)) {
-                this.gameState.blocks -= cost;
-                this.gameState.upgrades[upgradeId] = (this.gameState.upgrades[upgradeId] || 0) + 1;
-                this.gameState.upgradesOwned += 1;
-                // ... rest of the logic would go here
-                this.showNotification(`${upgrade.name} purchased!`, 'success');
-            } else {
-                this.showNotification(`Not enough blocks! You need ${cost} blocks.`, 'error');
-            }
+            this.showNotification(`Not enough blocks! You need ${this.formatNumber(cost)} blocks.`, 'error');
         }
     }
 
     setupEventListeners() {
         console.log('Setting up event listeners...');
         // Click handler
-        const bitcoinButton = document.getElementById('bitcoinButton');
-        console.log('Bitcoin button found:', bitcoinButton);
-        if (bitcoinButton) {
-            bitcoinButton.addEventListener('click', (e) => {
-                console.log('Bitcoin button clicked!', e);
+        const miningButton = document.getElementById('bitcoinButton');
+        console.log('Mining button found:', miningButton);
+        if (miningButton) {
+            miningButton.addEventListener('click', (e) => {
+                console.log('Mining button clicked!', e);
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -1255,8 +1232,8 @@ class MinecraftClicker {
                         this.gameState.blockInventory[blockName]++;
                     }
                     
-                    // Use the block's reward value instead of click value
-                    let blocksToAdd = this.gameState.currentBlockReward || 1;
+                    // Use the block's value instead of reward value for direct currency
+                    let blocksToAdd = this.gameState.currentBlockBitcoinValue || 1;
                     
                     // Apply block tier multiplier from rebirths
                     const blockMultiplier = this.gameState.currentBlockMultiplier || 1;
@@ -1312,6 +1289,8 @@ class MinecraftClicker {
                         }
                     }
                     
+                    // Add blocks to main currency
+                    this.gameState.blocks += blocksToAdd;
                     this.gameState.totalMined += blocksToAdd;
                 }
                 
@@ -1353,7 +1332,7 @@ class MinecraftClicker {
                 // Auto-save after each click
                 this.autoSave();
             });
-            console.log('Bitcoin button event listener added');
+            console.log('Mining button event listener added');
         }
 
         // Upgrade cards
@@ -2159,17 +2138,17 @@ class MinecraftClicker {
             return false;
         }
         
-        // Find the block type to get its bitcoin value
+        // Find the block type to get its block value
         const blockTypes = [
-            { name: 'Grass Block', bitcoinValue: 0.02 },
-            { name: 'Dirt Block', bitcoinValue: 0.02 },
-            { name: 'Cobblestone', bitcoinValue: 0.05 },
-            { name: 'Coal Ore', bitcoinValue: 0.08 },
-            { name: 'Iron Ore', bitcoinValue: 0.12 },
-            { name: 'Gold Ore', bitcoinValue: 0.18 },
-            { name: 'Diamond Ore', bitcoinValue: 0.25 },
-            { name: 'Emerald Ore', bitcoinValue: 0.35 },
-            { name: 'Netherite Ore', bitcoinValue: 0.50 }
+            { name: 'Grass Block', blockValue: 1 },
+            { name: 'Dirt Block', blockValue: 1 },
+            { name: 'Cobblestone', blockValue: 2 },
+            { name: 'Coal Ore', blockValue: 3 },
+            { name: 'Iron Ore', blockValue: 5 },
+            { name: 'Gold Ore', blockValue: 8 },
+            { name: 'Diamond Ore', blockValue: 12 },
+            { name: 'Emerald Ore', blockValue: 15 },
+            { name: 'Netherite Ore', blockValue: 25 }
         ];
         
         const blockType = blockTypes.find(bt => bt.name === blockName);
@@ -2178,11 +2157,11 @@ class MinecraftClicker {
             return false;
         }
         
-        const bitcoinEarned = blockType.bitcoinValue * quantity;
-        this.gameState.bitcoins += bitcoinEarned;
+        const blocksEarned = blockType.blockValue * quantity;
+        this.gameState.blocks += blocksEarned;
         this.gameState.blockInventory[blockName] -= quantity;
         
-        this.showNotification(`Sold ${quantity} ${blockName} for ${bitcoinEarned.toFixed(2)} BTC!`, 'success');
+        this.showNotification(`Converted ${quantity} ${blockName} to ${blocksEarned} blocks!`, 'success');
         this.updateDisplay();
         return true;
     }
@@ -2191,27 +2170,27 @@ class MinecraftClicker {
         console.log('Attempting to sell all blocks');
         console.log('Current inventory:', this.gameState.blockInventory);
         
-        let totalBitcoinEarned = 0;
+        let totalBlocksEarned = 0;
         let totalBlocksSold = 0;
         
         for (const [blockName, quantity] of Object.entries(this.gameState.blockInventory)) {
             if (quantity > 0) {
                 const blockTypes = [
-                    { name: 'Grass Block', bitcoinValue: 0.02 },
-                    { name: 'Dirt Block', bitcoinValue: 0.02 },
-                    { name: 'Cobblestone', bitcoinValue: 0.05 },
-                    { name: 'Coal Ore', bitcoinValue: 0.08 },
-                    { name: 'Iron Ore', bitcoinValue: 0.12 },
-                    { name: 'Gold Ore', bitcoinValue: 0.18 },
-                    { name: 'Diamond Ore', bitcoinValue: 0.25 },
-                    { name: 'Emerald Ore', bitcoinValue: 0.35 },
-                    { name: 'Netherite Ore', bitcoinValue: 0.50 }
+                    { name: 'Grass Block', blockValue: 1 },
+                    { name: 'Dirt Block', blockValue: 1 },
+                    { name: 'Cobblestone', blockValue: 2 },
+                    { name: 'Coal Ore', blockValue: 3 },
+                    { name: 'Iron Ore', blockValue: 5 },
+                    { name: 'Gold Ore', blockValue: 8 },
+                    { name: 'Diamond Ore', blockValue: 12 },
+                    { name: 'Emerald Ore', blockValue: 15 },
+                    { name: 'Netherite Ore', blockValue: 25 }
                 ];
                 
                 const blockType = blockTypes.find(bt => bt.name === blockName);
                 if (blockType) {
-                    const bitcoinEarned = blockType.bitcoinValue * quantity;
-                    totalBitcoinEarned += bitcoinEarned;
+                    const blocksEarned = blockType.blockValue * quantity;
+                    totalBlocksEarned += blocksEarned;
                     totalBlocksSold += quantity;
                     this.gameState.blockInventory[blockName] = 0;
                 }
@@ -2219,16 +2198,16 @@ class MinecraftClicker {
         }
         
         if (totalBlocksSold > 0) {
-            this.gameState.bitcoins += totalBitcoinEarned;
-            this.showNotification(`Sold all blocks for ${totalBitcoinEarned.toFixed(2)} BTC! (${totalBlocksSold} blocks)`, 'success');
+            this.gameState.blocks += totalBlocksEarned;
+            this.showNotification(`Converted all blocks to ${totalBlocksEarned} blocks! (${totalBlocksSold} blocks converted)`, 'success');
             this.updateDisplay();
         } else {
-            this.showNotification('No blocks to sell!', 'info');
+            this.showNotification('No blocks to convert!', 'info');
         }
     }
     
     generateNewBlock() {
-        // Define block types with proper rarity, health, bitcoin value, and mining requirements
+        // Define block types with proper rarity, health, block value, and mining requirements
         const blockTypes = [
             { 
                 name: 'Grass Block', 
@@ -2236,7 +2215,7 @@ class MinecraftClicker {
                 health: 1,
                 requiredTool: null, // Can mine with bare hands
                 blockReward: 1,
-                bitcoinValue: 0.02, // Least valuable
+                blockValue: 1, // Least valuable
                 color: '#8B4513',
                 image: 'assets/blocks/grass.png'
             },
@@ -2246,7 +2225,7 @@ class MinecraftClicker {
                 health: 1,
                 requiredTool: null, // Can mine with bare hands
                 blockReward: 1,
-                bitcoinValue: 0.02, // Least valuable
+                blockValue: 1, // Least valuable
                 color: '#8B4513',
                 image: 'assets/blocks/dirt.png'
             },
@@ -2256,7 +2235,7 @@ class MinecraftClicker {
                 health: 2,
                 requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
                 blockReward: 2,
-                bitcoinValue: 0.05, // Low value
+                blockValue: 2, // Low value
                 color: '#808080',
                 image: 'assets/blocks/cobblestone.png'
             },
@@ -2266,7 +2245,7 @@ class MinecraftClicker {
                 health: 3,
                 requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
                 blockReward: 3,
-                bitcoinValue: 0.08, // Low-medium value
+                blockValue: 3, // Low-medium value
                 color: '#2F2F2F',
                 image: 'assets/blocks/coal.png'
             },
@@ -2276,7 +2255,7 @@ class MinecraftClicker {
                 health: 4,
                 requiredTool: 'stone_pickaxe', // Need at least stone pickaxe
                 blockReward: 5,
-                bitcoinValue: 0.12, // Medium value
+                blockValue: 5, // Medium value
                 color: '#C0C0C0',
                 image: 'assets/blocks/iron.png'
             },
@@ -2286,7 +2265,7 @@ class MinecraftClicker {
                 health: 5,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 8,
-                bitcoinValue: 0.18, // Medium-high value
+                blockValue: 8, // Medium-high value
                 color: '#FFD700',
                 image: 'assets/blocks/gold.png'
             },
@@ -2296,7 +2275,7 @@ class MinecraftClicker {
                 health: 6,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 12,
-                bitcoinValue: 0.25, // High value
+                blockValue: 12, // High value
                 color: '#00BFFF',
                 image: 'assets/blocks/diamond.png'
             },
@@ -2306,7 +2285,7 @@ class MinecraftClicker {
                 health: 7,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 15,
-                bitcoinValue: 0.35, // Very high value
+                blockValue: 15, // Very high value
                 color: '#32CD32',
                 image: 'assets/blocks/emerald.png'
             },
@@ -2316,7 +2295,7 @@ class MinecraftClicker {
                 health: 10,
                 requiredTool: 'diamond_pickaxe', // Need at least diamond pickaxe
                 blockReward: 25,
-                bitcoinValue: 0.50, // Most valuable
+                blockValue: 25, // Most valuable
                 color: '#8B008B',
                 image: 'assets/blocks/netherite.png'
             }
@@ -2422,13 +2401,13 @@ class MinecraftClicker {
     }
     
     animateMiningSpeed(speedMultiplier) {
-        const bitcoinButton = document.getElementById('bitcoinButton');
-        if (bitcoinButton) {
+        const miningButton = document.getElementById('bitcoinButton');
+        if (miningButton) {
             // Add visual feedback for faster mining
-            bitcoinButton.style.transform = 'scale(0.95)';
+            miningButton.style.transform = 'scale(0.95)';
             const duration = 100 / speedMultiplier;
             setTimeout(() => {
-                bitcoinButton.style.transform = 'scale(1)';
+                miningButton.style.transform = 'scale(1)';
             }, duration);
             
             // Add particle effect for high speed mining
@@ -2439,8 +2418,8 @@ class MinecraftClicker {
     }
     
     createMiningParticle() {
-        const bitcoinButton = document.getElementById('bitcoinButton');
-        if (!bitcoinButton) return;
+        const miningButton = document.getElementById('bitcoinButton');
+        if (!miningButton) return;
         
         const particle = document.createElement('div');
         particle.className = 'mining-particle';
@@ -2452,7 +2431,7 @@ class MinecraftClicker {
         particle.style.pointerEvents = 'none';
         particle.style.zIndex = '1000';
         
-        const rect = bitcoinButton.getBoundingClientRect();
+        const rect = miningButton.getBoundingClientRect();
         const x = rect.left + rect.width / 2 + (Math.random() - 0.5) * 50;
         const y = rect.top + rect.height / 2;
         
@@ -2935,7 +2914,7 @@ class MinecraftClicker {
         // Update block value display
         const blockValueElement = document.getElementById('blockValue');
         if (blockValueElement && this.gameState.currentBlockBitcoinValue) {
-            blockValueElement.textContent = `Value: ${this.gameState.currentBlockBitcoinValue.toFixed(2)} BTC`;
+            blockValueElement.textContent = `Value: ${this.gameState.currentBlockBitcoinValue} blocks`;
         }
         
         // Update skip button
@@ -2967,19 +2946,19 @@ class MinecraftClicker {
         }
     }
     
-    // Debug function to test bitcoin system
-    debugBitcoinSystem() {
-        console.log('=== Bitcoin System Debug ===');
-        console.log('Current bitcoins:', this.gameState.bitcoins);
+    // Debug function to test block system
+    debugBlockSystem() {
+        console.log('=== Block System Debug ===');
+        console.log('Current blocks:', this.gameState.blocks);
         console.log('Current inventory:', this.gameState.blockInventory);
         console.log('Current block:', this.gameState.currentBlockName);
-        console.log('Current block bitcoin value:', this.gameState.currentBlockBitcoinValue);
+        console.log('Current block value:', this.gameState.currentBlockBitcoinValue);
         
-        // Test selling some blocks
-        console.log('Testing sell functionality...');
+        // Test converting some blocks
+        console.log('Testing convert functionality...');
         this.sellBlock('Grass Block', 1);
-        console.log('After selling 1 grass block - bitcoins:', this.gameState.bitcoins);
-        console.log('After selling 1 grass block - inventory:', this.gameState.blockInventory);
+        console.log('After converting 1 grass block - blocks:', this.gameState.blocks);
+        console.log('After converting 1 grass block - inventory:', this.gameState.blockInventory);
     }
     
     // Toggle inventory collapse/expand
