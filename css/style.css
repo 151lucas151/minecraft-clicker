@@ -79,6 +79,196 @@ main {
     text-align: right;
 }
 
+.inventory-display {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.inventory-display.collapsed {
+    padding: 0;
+}
+
+.inventory-display.collapsed .inventory-content {
+    display: none;
+}
+
+.inventory-display.collapsed .inventory-toggle {
+    transform: rotate(-90deg);
+}
+
+.inventory-header {
+    padding: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.inventory-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.inventory-toggle {
+    font-size: 1.2rem;
+    color: #4CAF50;
+    transition: transform 0.3s ease;
+    user-select: none;
+}
+
+.inventory-content {
+    padding: 20px;
+    padding-top: 0;
+}
+
+.inventory-display h3 {
+    color: #4CAF50;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.3rem;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.inventory-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.inventory-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.inventory-grid::-webkit-scrollbar-thumb {
+    background: rgba(76, 175, 80, 0.5);
+    border-radius: 4px;
+}
+
+.inventory-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(76, 175, 80, 0.7);
+}
+
+.inventory-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.inventory-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.inventory-item img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 8px;
+    image-rendering: auto;
+    object-fit: contain;
+    border-radius: 5px;
+}
+
+.inventory-item .block-name {
+    font-size: 0.8rem;
+    color: #ffffff;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.inventory-item .block-count {
+    font-size: 1rem;
+    color: #4CAF50;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.inventory-item .block-value {
+    font-size: 0.7rem;
+    color: #ffd700;
+    margin-bottom: 8px;
+}
+
+.inventory-item .sell-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-top: auto;
+}
+
+.inventory-item .sell-button:hover {
+    background: #45a049;
+}
+
+.inventory-controls {
+    text-align: center;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.sell-all-button {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.sell-all-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.debug-button {
+    background: linear-gradient(45deg, #9c27b0, #673ab7);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+    margin-left: 10px;
+}
+
+.debug-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+}
+
 .currency {
     font-size: 0.8em;
     opacity: 0.8;
@@ -97,8 +287,8 @@ main {
 }
 
 .grass-block-button {
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
     border: none;
     background: linear-gradient(145deg, #666, #555);
     color: #000;
@@ -174,9 +364,7 @@ main {
     height: 100%;
     object-fit: cover;
     border-radius: 25px;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
+    image-rendering: auto;
     display: block;
     opacity: 1;
     visibility: visible;
@@ -314,9 +502,7 @@ main {
     height: 100%;
     object-fit: cover;
     border-radius: 0;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
+    image-rendering: auto;
 }
 
 /* Basic pickaxes - positioned to the right of the grass block */
@@ -4338,8 +4524,8 @@ main {
     }
     
     .grass-block-button {
-        width: 150px;
-        height: 150px;
+        width: 200px;
+        height: 200px;
         font-size: 2rem;
     }
     
@@ -4454,8 +4640,8 @@ main {
     }
     
     .grass-block-button {
-        width: 120px;
-        height: 120px;
+        width: 150px;
+        height: 150px;
         font-size: 1.5rem;
     }
     
@@ -4877,4 +5063,12 @@ main {
     font-size: 0.9rem;
     color: #ccc;
     font-style: italic;
+}
+
+.block-value {
+    display: block;
+    font-size: 0.9rem;
+    color: #ffd700;
+    font-weight: 600;
+    margin-top: 5px;
 }
