@@ -632,13 +632,13 @@ class MinecraftClicker {
         const blockTypes = [
             { name: 'Grass Block', image: 'assets/blocks/grass.png', blockValue: 1 },
             { name: 'Dirt Block', image: 'assets/blocks/dirt.png', blockValue: 1 },
-            { name: 'Cobblestone', image: 'assets/blocks/cobblestone.png', blockValue: 2 },
-            { name: 'Coal Ore', image: 'assets/blocks/coal.png', blockValue: 3 },
-            { name: 'Iron Ore', image: 'assets/blocks/iron.png', blockValue: 5 },
-            { name: 'Gold Ore', image: 'assets/blocks/gold.png', blockValue: 8 },
-            { name: 'Diamond Ore', image: 'assets/blocks/diamond.png', blockValue: 12 },
-            { name: 'Emerald Ore', image: 'assets/blocks/emerald.png', blockValue: 15 },
-            { name: 'Netherite Ore', image: 'assets/blocks/netherite.png', blockValue: 25 }
+            { name: 'Cobblestone', image: 'assets/blocks/cobblestone.png', blockValue: 5 },
+            { name: 'Coal Ore', image: 'assets/blocks/coal.png', blockValue: 10 },
+            { name: 'Iron Ore', image: 'assets/blocks/iron.png', blockValue: 25 },
+            { name: 'Gold Ore', image: 'assets/blocks/gold.png', blockValue: 50 },
+            { name: 'Diamond Ore', image: 'assets/blocks/diamond.png', blockValue: 100 },
+            { name: 'Emerald Ore', image: 'assets/blocks/emerald.png', blockValue: 150 },
+            { name: 'Netherite Ore', image: 'assets/blocks/netherite.png', blockValue: 500 }
         ];
         
         blockTypes.forEach(blockType => {
@@ -2142,13 +2142,13 @@ class MinecraftClicker {
         const blockTypes = [
             { name: 'Grass Block', blockValue: 1 },
             { name: 'Dirt Block', blockValue: 1 },
-            { name: 'Cobblestone', blockValue: 2 },
-            { name: 'Coal Ore', blockValue: 3 },
-            { name: 'Iron Ore', blockValue: 5 },
-            { name: 'Gold Ore', blockValue: 8 },
-            { name: 'Diamond Ore', blockValue: 12 },
-            { name: 'Emerald Ore', blockValue: 15 },
-            { name: 'Netherite Ore', blockValue: 25 }
+            { name: 'Cobblestone', blockValue: 5 },
+            { name: 'Coal Ore', blockValue: 10 },
+            { name: 'Iron Ore', blockValue: 25 },
+            { name: 'Gold Ore', blockValue: 50 },
+            { name: 'Diamond Ore', blockValue: 100 },
+            { name: 'Emerald Ore', blockValue: 150 },
+            { name: 'Netherite Ore', blockValue: 500 }
         ];
         
         const blockType = blockTypes.find(bt => bt.name === blockName);
@@ -2178,13 +2178,13 @@ class MinecraftClicker {
                 const blockTypes = [
                     { name: 'Grass Block', blockValue: 1 },
                     { name: 'Dirt Block', blockValue: 1 },
-                    { name: 'Cobblestone', blockValue: 2 },
-                    { name: 'Coal Ore', blockValue: 3 },
-                    { name: 'Iron Ore', blockValue: 5 },
-                    { name: 'Gold Ore', blockValue: 8 },
-                    { name: 'Diamond Ore', blockValue: 12 },
-                    { name: 'Emerald Ore', blockValue: 15 },
-                    { name: 'Netherite Ore', blockValue: 25 }
+                    { name: 'Cobblestone', blockValue: 5 },
+                    { name: 'Coal Ore', blockValue: 10 },
+                    { name: 'Iron Ore', blockValue: 25 },
+                    { name: 'Gold Ore', blockValue: 50 },
+                    { name: 'Diamond Ore', blockValue: 100 },
+                    { name: 'Emerald Ore', blockValue: 150 },
+                    { name: 'Netherite Ore', blockValue: 500 }
                 ];
                 
                 const blockType = blockTypes.find(bt => bt.name === blockName);
@@ -2211,7 +2211,7 @@ class MinecraftClicker {
         const blockTypes = [
             { 
                 name: 'Grass Block', 
-                chance: 0.35, // 35% - most common
+                chance: 0.40, // 40% - most common (1 in 2.5)
                 health: 1,
                 requiredTool: null, // Can mine with bare hands
                 blockReward: 1,
@@ -2221,7 +2221,7 @@ class MinecraftClicker {
             },
             { 
                 name: 'Dirt Block', 
-                chance: 0.30, // 30% - very common
+                chance: 0.30, // 30% - very common (1 in 3.3)
                 health: 1,
                 requiredTool: null, // Can mine with bare hands
                 blockReward: 1,
@@ -2231,71 +2231,71 @@ class MinecraftClicker {
             },
             { 
                 name: 'Cobblestone', 
-                chance: 0.20, // 20% - common
+                chance: 0.15, // 15% - common (1 in 6.7)
                 health: 2,
                 requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
                 blockReward: 2,
-                blockValue: 2, // Low value
+                blockValue: 5, // Low value
                 color: '#808080',
                 image: 'assets/blocks/cobblestone.png'
             },
             { 
                 name: 'Coal Ore', 
-                chance: 0.08, // 8% - uncommon
+                chance: 0.08, // 8% - uncommon (1 in 12.5)
                 health: 3,
                 requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
                 blockReward: 3,
-                blockValue: 3, // Low-medium value
+                blockValue: 10, // Low-medium value
                 color: '#2F2F2F',
                 image: 'assets/blocks/coal.png'
             },
             { 
                 name: 'Iron Ore', 
-                chance: 0.04, // 4% - rare
+                chance: 0.04, // 4% - rare (1 in 25)
                 health: 4,
                 requiredTool: 'stone_pickaxe', // Need at least stone pickaxe
                 blockReward: 5,
-                blockValue: 5, // Medium value
+                blockValue: 25, // Medium value
                 color: '#C0C0C0',
                 image: 'assets/blocks/iron.png'
             },
             { 
                 name: 'Gold Ore', 
-                chance: 0.02, // 2% - very rare
+                chance: 0.015, // 1.5% - very rare (1 in 67)
                 health: 5,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 8,
-                blockValue: 8, // Medium-high value
+                blockValue: 50, // Medium-high value
                 color: '#FFD700',
                 image: 'assets/blocks/gold.png'
             },
             { 
                 name: 'Diamond Ore', 
-                chance: 0.008, // 0.8% - extremely rare
+                chance: 0.004, // 0.4% - extremely rare (1 in 250)
                 health: 6,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 12,
-                blockValue: 12, // High value
+                blockValue: 100, // High value
                 color: '#00BFFF',
                 image: 'assets/blocks/diamond.png'
             },
             { 
                 name: 'Emerald Ore', 
-                chance: 0.005, // 0.5% - extremely rare
+                chance: 0.0025, // 0.25% - extremely rare (1 in 400)
                 health: 7,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 15,
-                blockValue: 15, // Very high value
+                blockValue: 150, // Very high value
                 color: '#32CD32',
                 image: 'assets/blocks/emerald.png'
             },
             { 
                 name: 'Netherite Ore', 
-                chance: 0.001, // 0.1% - ultra rare
+                chance: 0.0005, // 0.05% - ultra rare (1 in 2000)
                 health: 10,
                 requiredTool: 'diamond_pickaxe', // Need at least diamond pickaxe
                 blockReward: 25,
-                blockValue: 25, // Most valuable
+                blockValue: 500, // Most valuable
                 color: '#8B008B',
                 image: 'assets/blocks/netherite.png'
             }
