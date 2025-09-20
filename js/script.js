@@ -1172,6 +1172,12 @@ class MinecraftClicker {
                 
                 // Only get blocks if the block was broken
                 if (blockBroken) {
+                    // Check if this is a special chest block
+                    if (this.gameState.currentBlockName === 'Mystery Chest') {
+                        this.openMysteryChest();
+                        return; // Exit early since chest handles its own display update
+                    }
+                    
                     // Use the block's value for direct currency
                     let blocksToAdd = this.gameState.currentBlockBitcoinValue || 1;
                     
@@ -2171,6 +2177,19 @@ class MinecraftClicker {
                 image: 'assets/blocks/netherite.png',
                 rarity: 'Mythic',
                 rarityColor: '#E6CC80'
+            },
+            { 
+                name: 'Mystery Chest', 
+                chance: 0.0015, // 0.15% - ultra rare (1 in 670)
+                health: 1, // Easy to break but very rare
+                requiredTool: null, // Can break with bare hands
+                blockReward: 0, // Special chest - no direct block value
+                blockValue: 0, // Special chest - rewards are random
+                color: '#8B4513',
+                image: 'assets/blocks/gold.png', // Using gold block as placeholder for chest
+                rarity: 'Mystery',
+                rarityColor: '#FFD700',
+                isSpecial: true // Mark as special chest
             }
         ];
         
@@ -2225,6 +2244,167 @@ class MinecraftClicker {
         }
         
         console.log(`Generated block: ${selectedBlock.name} (Health: ${selectedBlock.health}, Required Tool: ${selectedBlock.requiredTool || 'None'}, Rarity: ${selectedBlock.rarity})`);
+    }
+    
+    openMysteryChest() {
+        // Define 67 different rewards (good and bad)
+        const chestRewards = [
+            // Amazing rewards (1-5)
+            { type: 'blocks', amount: 1000000, message: 'Jackpot! +1,000,000 blocks!', color: '#00FF00' },
+            { type: 'blocks', amount: 500000, message: 'Massive Win! +500,000 blocks!', color: '#00FF00' },
+            { type: 'blocks', amount: 250000, message: 'Huge Reward! +250,000 blocks!', color: '#00FF00' },
+            { type: 'blocks', amount: 100000, message: 'Big Win! +100,000 blocks!', color: '#00FF00' },
+            { type: 'blocks', amount: 50000, message: 'Great Find! +50,000 blocks!', color: '#00FF00' },
+            
+            // Very good rewards (6-15)
+            { type: 'blocks', amount: 25000, message: 'Nice Reward! +25,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 20000, message: 'Good Fortune! +20,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 15000, message: 'Lucky Find! +15,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 12000, message: 'Sweet Reward! +12,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 10000, message: 'Decent Haul! +10,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 8000, message: 'Not Bad! +8,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 6000, message: 'Fair Reward! +6,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 5000, message: 'Decent Find! +5,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 4000, message: 'Okay Reward! +4,000 blocks!', color: '#90EE90' },
+            { type: 'blocks', amount: 3000, message: 'Small Win! +3,000 blocks!', color: '#90EE90' },
+            
+            // Good rewards (16-25)
+            { type: 'blocks', amount: 2500, message: 'Good Find! +2,500 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 2000, message: 'Nice! +2,000 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 1500, message: 'Decent! +1,500 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 1200, message: 'Okay! +1,200 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 1000, message: 'Fair! +1,000 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 800, message: 'Not Bad! +800 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 600, message: 'Decent! +600 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 500, message: 'Okay! +500 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 400, message: 'Fair! +400 blocks!', color: '#98FB98' },
+            { type: 'blocks', amount: 300, message: 'Small! +300 blocks!', color: '#98FB98' },
+            
+            // Neutral rewards (26-35)
+            { type: 'blocks', amount: 250, message: 'Meh... +250 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 200, message: 'Okay... +200 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 150, message: 'Fine... +150 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 100, message: 'Whatever... +100 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 75, message: 'Meh... +75 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 50, message: 'Okay... +50 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 25, message: 'Fine... +25 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 10, message: 'Whatever... +10 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 5, message: 'Meh... +5 blocks', color: '#FFFF99' },
+            { type: 'blocks', amount: 1, message: 'Really? +1 block', color: '#FFFF99' },
+            
+            // Bad rewards (36-50)
+            { type: 'blocks', amount: -1000, message: 'Oops! -1,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -2000, message: 'Bad Luck! -2,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -3000, message: 'Unlucky! -3,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -4000, message: 'Rough! -4,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -5000, message: 'Tough Break! -5,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -6000, message: 'Bad Day! -6,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -8000, message: 'Unlucky! -8,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -10000, message: 'Rough! -10,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -15000, message: 'Tough Break! -15,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -20000, message: 'Bad Day! -20,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -25000, message: 'Unlucky! -25,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -30000, message: 'Rough! -30,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -40000, message: 'Tough Break! -40,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -50000, message: 'Bad Day! -50,000 blocks', color: '#FFB6C1' },
+            { type: 'blocks', amount: -75000, message: 'Unlucky! -75,000 blocks', color: '#FFB6C1' },
+            
+            // Terrible rewards (51-62)
+            { type: 'blocks', amount: -100000, message: 'Disaster! -100,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -150000, message: 'Catastrophe! -150,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -200000, message: 'Disaster! -200,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -300000, message: 'Catastrophe! -300,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -400000, message: 'Disaster! -400,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -500000, message: 'Catastrophe! -500,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -750000, message: 'Disaster! -750,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -1000000, message: 'Catastrophe! -1,000,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -1500000, message: 'Disaster! -1,500,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -2000000, message: 'Catastrophe! -2,000,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -3000000, message: 'Disaster! -3,000,000 blocks', color: '#FF6B6B' },
+            { type: 'blocks', amount: -4000000, message: 'Catastrophe! -4,000,000 blocks', color: '#FF6B6B' },
+            
+            // Extreme rewards (63-67)
+            { type: 'blocks', amount: -5000000, message: 'DEVASTATING! -5,000,000 blocks', color: '#FF0000' },
+            { type: 'blocks', amount: -6825742, message: 'CATASTROPHIC! -6,825,742 blocks', color: '#FF0000' },
+            { type: 'blocks', amount: -10000000, message: 'APOCALYPTIC! -10,000,000 blocks', color: '#FF0000' },
+            { type: 'blocks', amount: -20000000, message: 'WORLD ENDING! -20,000,000 blocks', color: '#FF0000' },
+            { type: 'blocks', amount: -50000000, message: 'UNIVERSE DESTROYING! -50,000,000 blocks', color: '#FF0000' }
+        ];
+        
+        // Pick a random reward
+        const reward = chestRewards[Math.floor(Math.random() * chestRewards.length)];
+        
+        // Apply the reward
+        if (reward.type === 'blocks') {
+            // Ensure player can't go below 0 blocks (unless it's a massive loss)
+            if (reward.amount < 0 && Math.abs(reward.amount) > this.gameState.blocks) {
+                // For massive losses, set to 0 instead of negative
+                if (Math.abs(reward.amount) > 1000000) {
+                    this.gameState.blocks = 0;
+                } else {
+                    this.gameState.blocks = Math.max(0, this.gameState.blocks + reward.amount);
+                }
+            } else {
+                this.gameState.blocks += reward.amount;
+            }
+        }
+        
+        // Show the reward notification
+        this.showNotification(`<strong>🎁 Mystery Chest Opened!</strong><br>${reward.message}`, 'chest');
+        
+        // Add some visual flair for big rewards/losses
+        if (Math.abs(reward.amount) >= 100000) {
+            // Create particle effects for big rewards
+            this.createChestParticles(reward.amount > 0);
+        }
+        
+        // Update display
+        this.updateDisplay();
+        
+        console.log(`Mystery chest opened: ${reward.message} (${reward.amount} blocks)`);
+    }
+    
+    createChestParticles(isPositive) {
+        // Create visual particles for chest rewards
+        const miningButton = document.getElementById('bitcoinButton');
+        if (!miningButton) return;
+        
+        const rect = miningButton.getBoundingClientRect();
+        const particleCount = 15;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.left = (rect.left + rect.width / 2) + 'px';
+            particle.style.top = (rect.top + rect.height / 2) + 'px';
+            particle.style.width = '10px';
+            particle.style.height = '10px';
+            particle.style.backgroundColor = isPositive ? '#00FF00' : '#FF0000';
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '10000';
+            particle.style.transition = 'all 2s ease-out';
+            
+            document.body.appendChild(particle);
+            
+            // Animate particle
+            setTimeout(() => {
+                const angle = (i / particleCount) * Math.PI * 2;
+                const distance = 100 + Math.random() * 100;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+                
+                particle.style.transform = `translate(${x}px, ${y}px)`;
+                particle.style.opacity = '0';
+            }, 10);
+            
+            // Remove particle after animation
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 2100);
+        }
     }
     
     checkBlockMineability() {
@@ -2369,6 +2549,11 @@ class MinecraftClicker {
             case 'achievement':
                 notification.style.backgroundColor = '#2196F3';
                 notification.style.borderColor = '#1976D2';
+                break;
+            case 'chest':
+                notification.style.backgroundColor = '#FFD700';
+                notification.style.borderColor = '#FFA500';
+                notification.style.color = '#000';
                 break;
             default:
                 notification.style.backgroundColor = '#333';
