@@ -26,18 +26,6 @@ class MinecraftClicker {
             currentBlockTier: 0,
             currentBlockMultiplier: 1,
             currentBlockName: 'Grass Block',
-            // Block inventory system
-            blockInventory: {
-                'Grass Block': 0,
-                'Dirt Block': 0,
-                'Cobblestone': 0,
-                'Coal Ore': 0,
-                'Iron Ore': 0,
-                'Gold Ore': 0,
-                'Diamond Ore': 0,
-                'Emerald Ore': 0,
-                'Netherite Ore': 0
-            },
             // Individual tool durability system
             toolDurability: {
                 wooden_pickaxe: { current: 0, max: 60, isBroken: false },
@@ -396,9 +384,6 @@ class MinecraftClicker {
         // Initialize the first block
         this.generateNewBlock();
         
-        // Give player some initial blocks to start with
-        this.gameState.blockInventory['Grass Block'] = 0;
-        this.gameState.blockInventory['Dirt Block'] = 0;
         
         // Update display after everything is initialized (but don't check achievements yet)
         this.updateDisplayWithoutAchievements();
@@ -604,8 +589,6 @@ class MinecraftClicker {
         this.renderUpgrades();
         this.renderEnchantments();
         
-        // Update inventory display
-        this.renderInventory();
         
         // Update enchantment effects display
         this.updateEnchantmentEffectsDisplay();
@@ -623,43 +606,6 @@ class MinecraftClicker {
         this.updateBlockImage();
     }
     
-    renderInventory() {
-        const inventoryGrid = document.getElementById('inventoryGrid');
-        if (!inventoryGrid) return;
-        
-        inventoryGrid.innerHTML = '';
-        
-        const blockTypes = [
-            { name: 'Grass Block', image: 'assets/blocks/grass.png', blockValue: 1 },
-            { name: 'Dirt Block', image: 'assets/blocks/dirt.png', blockValue: 1 },
-            { name: 'Cobblestone', image: 'assets/blocks/cobblestone.png', blockValue: 5 },
-            { name: 'Coal Ore', image: 'assets/blocks/coal.png', blockValue: 10 },
-            { name: 'Iron Ore', image: 'assets/blocks/iron.png', blockValue: 25 },
-            { name: 'Gold Ore', image: 'assets/blocks/gold.png', blockValue: 50 },
-            { name: 'Diamond Ore', image: 'assets/blocks/diamond.png', blockValue: 100 },
-            { name: 'Emerald Ore', image: 'assets/blocks/emerald.png', blockValue: 150 },
-            { name: 'Netherite Ore', image: 'assets/blocks/netherite.png', blockValue: 500 }
-        ];
-        
-        blockTypes.forEach(blockType => {
-            const quantity = this.gameState.blockInventory[blockType.name] || 0;
-            const totalValue = blockType.blockValue * quantity;
-            
-            const inventoryItem = document.createElement('div');
-            inventoryItem.className = 'inventory-item';
-            inventoryItem.innerHTML = `
-                <img src="${blockType.image}" alt="${blockType.name}" class="block-image">
-                <div class="block-name">${blockType.name}</div>
-                <div class="block-count">${quantity}</div>
-                <div class="block-value">${blockType.blockValue} blocks each</div>
-                <button class="sell-button" onclick="game.sellBlock('${blockType.name}', 1)" ${quantity > 0 ? '' : 'disabled'}>
-                    Convert 1
-                </button>
-            `;
-            
-            inventoryGrid.appendChild(inventoryItem);
-        });
-    }
     
     updateGameMechanicsDisplay() {
         // Update tool durability display
@@ -1226,13 +1172,7 @@ class MinecraftClicker {
                 
                 // Only get blocks if the block was broken
                 if (blockBroken) {
-                    // Add the mined block to inventory
-                    const blockName = this.gameState.currentBlockName;
-                    if (this.gameState.blockInventory.hasOwnProperty(blockName)) {
-                        this.gameState.blockInventory[blockName]++;
-                    }
-                    
-                    // Use the block's value instead of reward value for direct currency
+                    // Use the block's value for direct currency
                     let blocksToAdd = this.gameState.currentBlockBitcoinValue || 1;
                     
                     // Apply block tier multiplier from rebirths
@@ -1267,11 +1207,8 @@ class MinecraftClicker {
                                 // Chance for rare block
                                 const rareBlockTypes = ['Diamond Ore', 'Emerald Ore', 'Gold Ore', 'Iron Ore', 'Coal Ore'];
                                 const rareBlock = rareBlockTypes[Math.floor(Math.random() * rareBlockTypes.length)];
-                                if (this.gameState.blockInventory.hasOwnProperty(rareBlock)) {
-                                    this.gameState.blockInventory[rareBlock]++;
-                                }
                                 this.gameState.rareBlocksFound++;
-                                this.showNotification(`Rare ${rareBlock} found! +1 to inventory!`, 'rare');
+                                this.showNotification(`Rare ${rareBlock} found!`, 'rare');
                             }
                         }
                         
@@ -1394,13 +1331,6 @@ class MinecraftClicker {
             });
         }
         
-        // Sell all blocks button
-        const sellAllButton = document.getElementById('sellAllButton');
-        if (sellAllButton) {
-            sellAllButton.addEventListener('click', () => {
-                this.sellAllBlocks();
-            });
-        }
 
         // Auto-save when user leaves the page
         window.addEventListener('beforeunload', () => {
@@ -2129,82 +2059,7 @@ class MinecraftClicker {
         return (num / 1000000000000000000).toFixed(1) + 'Qt';
     }
     
-    sellBlock(blockName, quantity = 1) {
-        console.log(`Attempting to sell ${quantity} ${blockName}`);
-        console.log(`Current inventory:`, this.gameState.blockInventory);
-        
-        if (!this.gameState.blockInventory[blockName] || this.gameState.blockInventory[blockName] < quantity) {
-            this.showNotification(`You don't have enough ${blockName} to sell!`, 'error');
-            return false;
-        }
-        
-        // Find the block type to get its block value
-        const blockTypes = [
-            { name: 'Grass Block', blockValue: 1 },
-            { name: 'Dirt Block', blockValue: 1 },
-            { name: 'Cobblestone', blockValue: 5 },
-            { name: 'Coal Ore', blockValue: 10 },
-            { name: 'Iron Ore', blockValue: 25 },
-            { name: 'Gold Ore', blockValue: 50 },
-            { name: 'Diamond Ore', blockValue: 100 },
-            { name: 'Emerald Ore', blockValue: 150 },
-            { name: 'Netherite Ore', blockValue: 500 }
-        ];
-        
-        const blockType = blockTypes.find(bt => bt.name === blockName);
-        if (!blockType) {
-            this.showNotification(`Unknown block type: ${blockName}`, 'error');
-            return false;
-        }
-        
-        const blocksEarned = blockType.blockValue * quantity;
-        this.gameState.blocks += blocksEarned;
-        this.gameState.blockInventory[blockName] -= quantity;
-        
-        this.showNotification(`Converted ${quantity} ${blockName} to ${blocksEarned} blocks!`, 'success');
-        this.updateDisplay();
-        return true;
-    }
     
-    sellAllBlocks() {
-        console.log('Attempting to sell all blocks');
-        console.log('Current inventory:', this.gameState.blockInventory);
-        
-        let totalBlocksEarned = 0;
-        let totalBlocksSold = 0;
-        
-        for (const [blockName, quantity] of Object.entries(this.gameState.blockInventory)) {
-            if (quantity > 0) {
-                const blockTypes = [
-                    { name: 'Grass Block', blockValue: 1 },
-                    { name: 'Dirt Block', blockValue: 1 },
-                    { name: 'Cobblestone', blockValue: 5 },
-                    { name: 'Coal Ore', blockValue: 10 },
-                    { name: 'Iron Ore', blockValue: 25 },
-                    { name: 'Gold Ore', blockValue: 50 },
-                    { name: 'Diamond Ore', blockValue: 100 },
-                    { name: 'Emerald Ore', blockValue: 150 },
-                    { name: 'Netherite Ore', blockValue: 500 }
-                ];
-                
-                const blockType = blockTypes.find(bt => bt.name === blockName);
-                if (blockType) {
-                    const blocksEarned = blockType.blockValue * quantity;
-                    totalBlocksEarned += blocksEarned;
-                    totalBlocksSold += quantity;
-                    this.gameState.blockInventory[blockName] = 0;
-                }
-            }
-        }
-        
-        if (totalBlocksSold > 0) {
-            this.gameState.blocks += totalBlocksEarned;
-            this.showNotification(`Converted all blocks to ${totalBlocksEarned} blocks! (${totalBlocksSold} blocks converted)`, 'success');
-            this.updateDisplay();
-        } else {
-            this.showNotification('No blocks to convert!', 'info');
-        }
-    }
     
     generateNewBlock() {
         // Define block types with proper rarity, health, block value, and mining requirements
@@ -3000,24 +2855,12 @@ class MinecraftClicker {
     debugBlockSystem() {
         console.log('=== Block System Debug ===');
         console.log('Current blocks:', this.gameState.blocks);
-        console.log('Current inventory:', this.gameState.blockInventory);
         console.log('Current block:', this.gameState.currentBlockName);
         console.log('Current block value:', this.gameState.currentBlockBitcoinValue);
-        
-        // Test converting some blocks
-        console.log('Testing convert functionality...');
-        this.sellBlock('Grass Block', 1);
-        console.log('After converting 1 grass block - blocks:', this.gameState.blocks);
-        console.log('After converting 1 grass block - inventory:', this.gameState.blockInventory);
+        console.log('Current block health:', this.gameState.currentBlockHealth);
+        console.log('Current block rarity:', this.gameState.currentBlockRarity);
     }
     
-    // Toggle inventory collapse/expand
-    toggleInventory() {
-        const inventoryDisplay = document.querySelector('.inventory-display');
-        if (inventoryDisplay) {
-            inventoryDisplay.classList.toggle('collapsed');
-        }
-    }
 
 }
 
