@@ -2217,7 +2217,9 @@ class MinecraftClicker {
                 blockReward: 1,
                 blockValue: 1, // Least valuable
                 color: '#8B4513',
-                image: 'assets/blocks/grass.png'
+                image: 'assets/blocks/grass.png',
+                rarity: 'Common',
+                rarityColor: '#FFFFFF'
             },
             { 
                 name: 'Dirt Block', 
@@ -2227,77 +2229,93 @@ class MinecraftClicker {
                 blockReward: 1,
                 blockValue: 1, // Least valuable
                 color: '#8B4513',
-                image: 'assets/blocks/dirt.png'
+                image: 'assets/blocks/dirt.png',
+                rarity: 'Common',
+                rarityColor: '#FFFFFF'
             },
             { 
                 name: 'Cobblestone', 
                 chance: 0.15, // 15% - common (1 in 6.7)
-                health: 2,
+                health: 5,
                 requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
                 blockReward: 2,
                 blockValue: 5, // Low value
                 color: '#808080',
-                image: 'assets/blocks/cobblestone.png'
+                image: 'assets/blocks/cobblestone.png',
+                rarity: 'Common',
+                rarityColor: '#FFFFFF'
             },
             { 
                 name: 'Coal Ore', 
                 chance: 0.08, // 8% - uncommon (1 in 12.5)
-                health: 3,
+                health: 10,
                 requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
                 blockReward: 3,
                 blockValue: 10, // Low-medium value
                 color: '#2F2F2F',
-                image: 'assets/blocks/coal.png'
+                image: 'assets/blocks/coal.png',
+                rarity: 'Uncommon',
+                rarityColor: '#1EFF00'
             },
             { 
                 name: 'Iron Ore', 
                 chance: 0.04, // 4% - rare (1 in 25)
-                health: 4,
+                health: 20,
                 requiredTool: 'stone_pickaxe', // Need at least stone pickaxe
                 blockReward: 5,
                 blockValue: 25, // Medium value
                 color: '#C0C0C0',
-                image: 'assets/blocks/iron.png'
+                image: 'assets/blocks/iron.png',
+                rarity: 'Rare',
+                rarityColor: '#0070DD'
             },
             { 
                 name: 'Gold Ore', 
                 chance: 0.015, // 1.5% - very rare (1 in 67)
-                health: 5,
+                health: 30,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 8,
                 blockValue: 50, // Medium-high value
                 color: '#FFD700',
-                image: 'assets/blocks/gold.png'
+                image: 'assets/blocks/gold.png',
+                rarity: 'Very Rare',
+                rarityColor: '#B8860B'
             },
             { 
                 name: 'Diamond Ore', 
                 chance: 0.004, // 0.4% - extremely rare (1 in 250)
-                health: 6,
+                health: 40,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 12,
                 blockValue: 100, // High value
                 color: '#00BFFF',
-                image: 'assets/blocks/diamond.png'
+                image: 'assets/blocks/diamond.png',
+                rarity: 'Epic',
+                rarityColor: '#A335EE'
             },
             { 
                 name: 'Emerald Ore', 
                 chance: 0.0025, // 0.25% - extremely rare (1 in 400)
-                health: 7,
+                health: 50,
                 requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
                 blockReward: 15,
                 blockValue: 150, // Very high value
                 color: '#32CD32',
-                image: 'assets/blocks/emerald.png'
+                image: 'assets/blocks/emerald.png',
+                rarity: 'Legendary',
+                rarityColor: '#FF8000'
             },
             { 
                 name: 'Netherite Ore', 
                 chance: 0.0005, // 0.05% - ultra rare (1 in 2000)
-                health: 10,
+                health: 100,
                 requiredTool: 'diamond_pickaxe', // Need at least diamond pickaxe
                 blockReward: 25,
                 blockValue: 500, // Most valuable
                 color: '#8B008B',
-                image: 'assets/blocks/netherite.png'
+                image: 'assets/blocks/netherite.png',
+                rarity: 'Mythic',
+                rarityColor: '#E6CC80'
             }
         ];
         
@@ -2323,7 +2341,10 @@ class MinecraftClicker {
         this.gameState.currentBlockRequiredTool = selectedBlock.requiredTool;
         this.gameState.currentBlockColor = selectedBlock.color;
         this.gameState.currentBlockImage = selectedBlock.image;
-        this.gameState.currentBlockBitcoinValue = selectedBlock.bitcoinValue;
+        this.gameState.currentBlockBitcoinValue = selectedBlock.blockValue;
+        this.gameState.currentBlockRarity = selectedBlock.rarity;
+        this.gameState.currentBlockRarityColor = selectedBlock.rarityColor;
+        this.gameState.currentBlockChance = selectedBlock.chance;
         
         // Check if player can mine this block
         this.checkBlockMineability();
@@ -2331,7 +2352,24 @@ class MinecraftClicker {
         // Update the block image on the mining button
         this.updateBlockImage();
         
-        console.log(`Generated block: ${selectedBlock.name} (Health: ${selectedBlock.health}, Required Tool: ${selectedBlock.requiredTool || 'None'})`);
+        // Update block display with rarity information
+        this.updateBlockDisplay();
+        
+        // Show rarity notification for rare blocks
+        if (selectedBlock.chance < 0.1) { // Less than 10% chance
+            const chanceText = selectedBlock.chance < 0.01 ? 
+                `1 in ${Math.round(1/selectedBlock.chance)}` : 
+                `${(selectedBlock.chance * 100).toFixed(1)}%`;
+            
+            this.showNotification(
+                `✨ ${selectedBlock.rarity} ${selectedBlock.name} Found! ✨<br>` +
+                `Spawn Chance: ${chanceText}<br>` +
+                `Health: ${selectedBlock.health} clicks`,
+                'rare'
+            );
+        }
+        
+        console.log(`Generated block: ${selectedBlock.name} (Health: ${selectedBlock.health}, Required Tool: ${selectedBlock.requiredTool || 'None'}, Rarity: ${selectedBlock.rarity})`);
     }
     
     checkBlockMineability() {
@@ -2896,10 +2934,22 @@ class MinecraftClicker {
         
         // Update block info display
         const blockNameInfoElement = document.getElementById('blockName');
+        const blockRarityElement = document.getElementById('blockRarity');
         const blockRequirementElement = document.getElementById('blockRequirement');
         
         if (blockNameInfoElement) {
             blockNameInfoElement.textContent = this.gameState.currentBlockName || 'Grass Block';
+        }
+        
+        // Update rarity display
+        if (blockRarityElement && this.gameState.currentBlockRarity) {
+            blockRarityElement.textContent = this.gameState.currentBlockRarity;
+            blockRarityElement.style.color = this.gameState.currentBlockRarityColor || '#FFFFFF';
+            blockRarityElement.style.display = 'block';
+            blockRarityElement.style.fontWeight = 'bold';
+            blockRarityElement.style.textShadow = '1px 1px 2px rgba(0,0,0,0.8)';
+        } else if (blockRarityElement) {
+            blockRarityElement.style.display = 'none';
         }
         
         if (blockRequirementElement) {
