@@ -50,7 +50,6 @@ class MinecraftClicker {
             currentBlockImage: 'assets/blocks/grass.png',
             currentBlockBitcoinValue: 1,
             canMineCurrentBlock: true,
-            miningBlockedReason: null,
             // Rare block system
             rareBlocksFound: 0,
             specialBlocksFound: [],
@@ -1145,11 +1144,7 @@ class MinecraftClicker {
                     return;
                 }
                 
-                // Check if player can mine the current block
-                if (!this.gameState.canMineCurrentBlock) {
-                    this.showNotification(this.gameState.miningBlockedReason, 'error');
-                    return;
-                }
+                // Tool requirements disabled - can mine any block
                 
                 // If no active tool, use bare hands (1 block per click)
                 if (!this.gameState.activeTool) {
@@ -1358,13 +1353,7 @@ class MinecraftClicker {
             });
         }
 
-        // Skip block button
-        const skipBlockButton = document.getElementById('skipBlockButton');
-        if (skipBlockButton) {
-            skipBlockButton.addEventListener('click', () => {
-                this.skipBlock();
-            });
-        }
+        // Skip block button removed - tool requirements disabled
         
 
         // Auto-save when user leaves the page
@@ -2154,7 +2143,7 @@ class MinecraftClicker {
                 name: 'Cobblestone', 
                 chance: 0.15, // 15% - common (1 in 6.7)
                 health: 5,
-                requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 2,
                 blockValue: 5, // Low value
                 color: '#808080',
@@ -2166,7 +2155,7 @@ class MinecraftClicker {
                 name: 'Coal Ore', 
                 chance: 0.08, // 8% - uncommon (1 in 12.5)
                 health: 10,
-                requiredTool: 'wooden_pickaxe', // Need at least wooden pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 3,
                 blockValue: 10, // Low-medium value
                 color: '#2F2F2F',
@@ -2178,7 +2167,7 @@ class MinecraftClicker {
                 name: 'Iron Ore', 
                 chance: 0.04, // 4% - rare (1 in 25)
                 health: 20,
-                requiredTool: 'stone_pickaxe', // Need at least stone pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 5,
                 blockValue: 25, // Medium value
                 color: '#C0C0C0',
@@ -2190,7 +2179,7 @@ class MinecraftClicker {
                 name: 'Gold Ore', 
                 chance: 0.015, // 1.5% - very rare (1 in 67)
                 health: 30,
-                requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 8,
                 blockValue: 50, // Medium-high value
                 color: '#FFD700',
@@ -2202,7 +2191,7 @@ class MinecraftClicker {
                 name: 'Diamond Ore', 
                 chance: 0.004, // 0.4% - extremely rare (1 in 250)
                 health: 40,
-                requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 12,
                 blockValue: 100, // High value
                 color: '#00BFFF',
@@ -2214,7 +2203,7 @@ class MinecraftClicker {
                 name: 'Emerald Ore', 
                 chance: 0.0025, // 0.25% - extremely rare (1 in 400)
                 health: 50,
-                requiredTool: 'iron_pickaxe', // Need at least iron pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 15,
                 blockValue: 150, // Very high value
                 color: '#32CD32',
@@ -2226,7 +2215,7 @@ class MinecraftClicker {
                 name: 'Netherite Ore', 
                 chance: 0.0005, // 0.05% - ultra rare (1 in 2000)
                 health: 100,
-                requiredTool: 'diamond_pickaxe', // Need at least diamond pickaxe
+                requiredTool: null, // Can mine with bare hands
                 blockReward: 25,
                 blockValue: 500, // Most valuable
                 color: '#8B008B',
@@ -2464,69 +2453,9 @@ class MinecraftClicker {
     }
     
     checkBlockMineability() {
-        const requiredTool = this.gameState.currentBlockRequiredTool;
-        
-        if (!requiredTool) {
-            // Can mine with bare hands
-            this.gameState.canMineCurrentBlock = true;
-            this.gameState.miningBlockedReason = null;
-            return;
-        }
-        
-        // Define tool tiers (higher index = better tool)
-        const toolTiers = [
-            'wooden_pickaxe',
-            'stone_pickaxe', 
-            'iron_pickaxe',
-            'diamond_pickaxe',
-            'netherite_pickaxe'
-        ];
-        
-        // Find the required tool's tier
-        const requiredToolTier = toolTiers.indexOf(requiredTool);
-        if (requiredToolTier === -1) {
-            // Unknown tool requirement
-            this.gameState.canMineCurrentBlock = false;
-            this.gameState.miningBlockedReason = `Unknown tool requirement: ${requiredTool}`;
-            return;
-        }
-        
-        // Check if player has any tool of the required tier or better
-        let hasSuitableTool = false;
-        let bestAvailableTool = null;
-        
-        for (let i = requiredToolTier; i < toolTiers.length; i++) {
-            const toolId = toolTiers[i];
-            if (this.gameState.upgrades[toolId] && this.gameState.upgrades[toolId] > 0) {
-                // Check if this tool is broken
-                if (this.gameState.toolDurability[toolId] && !this.gameState.toolDurability[toolId].isBroken) {
-                    hasSuitableTool = true;
-                    bestAvailableTool = toolId;
-                    break;
-                }
-            }
-        }
-        
-        if (hasSuitableTool) {
-            this.gameState.canMineCurrentBlock = true;
-            this.gameState.miningBlockedReason = null;
-            
-            // Auto-switch to the best available tool if current tool is worse
-            if (this.gameState.activeTool) {
-                const currentToolTier = toolTiers.indexOf(this.gameState.activeTool);
-                if (currentToolTier < requiredToolTier || 
-                    (this.gameState.toolDurability[this.gameState.activeTool] && 
-                     this.gameState.toolDurability[this.gameState.activeTool].isBroken)) {
-                    // Switch to a better tool
-                    this.gameState.activeTool = bestAvailableTool;
-                    this.showNotification(`Auto-switched to ${bestAvailableTool.replace('_', ' ')} for better mining!`, 'info');
-                }
-            }
-        } else {
-            this.gameState.canMineCurrentBlock = false;
-            const toolName = requiredTool.replace('_', ' ');
-            this.gameState.miningBlockedReason = `You need a ${toolName} or better to mine ${this.gameState.currentBlockName}!`;
-        }
+        // Tool requirements disabled - can mine any block with bare hands
+        this.gameState.canMineCurrentBlock = true;
+        this.gameState.miningBlockedReason = null;
     }
     
     animateMiningSpeed(speedMultiplier) {
@@ -2700,8 +2629,7 @@ class MinecraftClicker {
                     currentBlockRequiredTool: null,
                     currentBlockColor: '#8B4513',
                     currentBlockImage: 'assets/blocks/grass.png',
-                    canMineCurrentBlock: true,
-                    miningBlockedReason: null,
+                            canMineCurrentBlock: true,
                     rareBlocksFound: 0,
                     specialBlocksFound: [],
                     miningPower: 1.0,
@@ -3015,13 +2943,7 @@ class MinecraftClicker {
         }
     }
 
-    // Skip to the next block
-    skipBlock() {
-        this.showNotification(`Skipping ${this.gameState.currentBlockName}...`, 'info');
-        this.generateNewBlock();
-        this.updateDisplay();
-        this.saveGame();
-    }
+    // Skip block method removed - tool requirements disabled
 
     updateBlockDisplay() {
         // Update block name in sidebar
@@ -3061,17 +2983,7 @@ class MinecraftClicker {
             blockValueElement.textContent = `Value: ${this.gameState.currentBlockBitcoinValue} blocks`;
         }
         
-        // Update skip button
-        const skipBlockButton = document.getElementById('skipBlockButton');
-        if (skipBlockButton) {
-            if (!this.gameState.canMineCurrentBlock) {
-                skipBlockButton.style.display = 'inline-block';
-                skipBlockButton.textContent = `⏭️ Skip ${this.gameState.currentBlockName}`;
-                skipBlockButton.disabled = false;
-            } else {
-                skipBlockButton.style.display = 'none';
-            }
-        }
+        // Skip button removed - tool requirements disabled
     }
 
     updateBlockImage() {
