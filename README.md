@@ -6,7 +6,7 @@ A fun incremental mining game where you click to mine blocks and upgrade your mi
 
 - **🎮 Main Game**: [minecraftclick.com](https://minecraftclick.com) - Play the full game with all features
 - **📄 Landing Page**: [hromp.com/minecraft-clicker](https://hromp.com/minecraft-clicker) - Game information and features
-- **📱 Mobile App**: [React Native App Repository](https://github.com/151lucas151/minecraft-clicker-mobile) - *In Development* - Native mobile app for iOS and Android
+- **📱 Mobile App**: [React Native App Repository](https://github.com/151lucas151/minecraft-click-app) - *In Development* - Native mobile app for iOS and Android
 
 ## 🎮 Game Features
 
@@ -173,7 +173,7 @@ A React Native mobile app is currently in development to bring Minecraft Clicker
 - **Touch Controls**: Optimized touch interface for mobile
 - **Cross-Platform**: Single codebase for iOS and Android
 
-**Repository**: [151lucas151/minecraft-clicker-mobile](https://github.com/151lucas151/minecraft-clicker-mobile)
+**Repository**: [151lucas151/minecraft-click-app](https://github.com/151lucas151/minecraft-click-app)
 
 ## 📄 License
 
