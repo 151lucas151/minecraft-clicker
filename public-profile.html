@@ -278,7 +278,7 @@
             
             try {
                 // Load user's latest game state
-                const response = await fetch(`/minecraft-2.0/api/user/${username}`);
+                const response = await fetch(`/api/user/${username}`);
                 const data = await response.json();
                 
                 if (!data.success) {
@@ -286,41 +286,44 @@
                 }
                 
                 const userData = data.user;
-                const globalAchievements = JSON.parse(localStorage.getItem('globalAchievements') || '{}');
-                const userAchievements = globalAchievements[username] || [];
+                const userAchievements = userData.achievements || {};
                 
                 // Get achievements from centralized configuration
                 const allAchievements = AchievementsHelper.getAchievementsForDisplay();
                 
-                const unlockedCount = userAchievements.length;
+                // Count unlocked achievements
+                const unlockedAchievements = Object.keys(userAchievements).filter(id => 
+                    userAchievements[id] && userAchievements[id].unlocked
+                );
+                const unlockedCount = unlockedAchievements.length;
                 const totalCount = allAchievements.length;
-                const progressPercentage = (unlockedCount / totalCount) * 100;
+                const progressPercentage = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
                 
                 let achievementsHTML = `
-                    <div style="margin-bottom: 20px; padding: 15px; background: #ecf0f1; border-radius: 8px;">
+                    <div style="margin-bottom: 20px; padding: 15px; background: #ecf0f1; border-radius: 8px;">                                                                            
                         <div style="text-align: center; margin-bottom: 10px;">
-                            <strong>Achievement Progress: ${unlockedCount}/${totalCount} (${progressPercentage.toFixed(1)}%)</strong>
+                            <strong>🏆 Achievement Progress: ${unlockedCount}/${totalCount} (${progressPercentage.toFixed(1)}%)</strong>                                                     
                         </div>
-                        <div style="width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; overflow: hidden;">
-                            <div style="height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: ${progressPercentage}%; transition: width 0.3s;"></div>
+                        <div style="width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; overflow: hidden;">                                                                
+                            <div style="height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: ${progressPercentage}%; transition: width 0.3s;"></div>                
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">                                                                 
                 `;
                 
                 allAchievements.forEach(achievement => {
-                    const isUnlocked = userAchievements.includes(achievement.id);
+                    const isUnlocked = userAchievements[achievement.id] && userAchievements[achievement.id].unlocked;
                     const statusText = isUnlocked ? '✅ Unlocked' : '🔒 Locked';
-                    const backgroundColor = isUnlocked ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f1f2f6';
+                    const backgroundColor = isUnlocked ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f1f2f6';                                                                 
                     const textColor = isUnlocked ? 'white' : '#95a5a6';
                     const borderColor = isUnlocked ? '#667eea' : '#bdc3c7';
                     
                     achievementsHTML += `
-                        <div style="background: ${backgroundColor}; color: ${textColor}; border: 2px solid ${borderColor}; border-radius: 8px; padding: 15px; transition: all 0.3s;">
-                            <div style="font-weight: bold; margin-bottom: 5px;">${achievement.name}</div>
-                            <div style="font-size: 14px; margin-bottom: 10px;">${achievement.description}</div>
-                            <div style="font-size: 12px; opacity: 0.8;">Reward: ${achievement.reward.toLocaleString()} blocks</div>
-                            <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">${statusText}</div>
+                        <div style="background: ${backgroundColor}; color: ${textColor}; border: 2px solid ${borderColor}; border-radius: 8px; padding: 15px; transition: all 0.3s;">     
+                            <div style="font-weight: bold; margin-bottom: 5px;">${achievement.name}</div>                                                                                 
+                            <div style="font-size: 14px; margin-bottom: 10px;">${achievement.description}</div>                                                                           
+                            <div style="font-size: 12px; opacity: 0.8;">Reward: ${achievement.reward.toLocaleString()} blocks</div>                                                       
+                            <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">${statusText}</div>                                                                             
                         </div>
                     `;
                 });
@@ -333,27 +336,27 @@
                         <h2>📊 Statistics</h2>
                         <div class="stats-grid">
                             <div class="stat-item">
-                                <div class="stat-value">${formatNumber(userData.blocks || 0)}</div>
+                                <div class="stat-value">${formatNumber(userData.current_blocks || 0)}</div>                                                             
                                 <div class="stat-label">Blocks</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-value">${formatNumber(userData.totalMined || 0)}</div>
+                                <div class="stat-value">${formatNumber(userData.total_mined || 0)}</div>                                                        
                                 <div class="stat-label">Total Mined</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-value">${formatNumber(userData.totalClicks || 0)}</div>
+                                <div class="stat-value">${formatNumber(userData.total_clicks || 0)}</div>                                                       
                                 <div class="stat-label">Total Clicks</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-value">${formatNumber(userData.blocksPerSecond || 0)}</div>
+                                <div class="stat-value">${formatNumber(userData.blocks_per_second || 0)}</div>                                                   
                                 <div class="stat-label">Blocks/Second</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-value">${formatNumber(userData.blocksPerClick || 0)}</div>
+                                <div class="stat-value">${formatNumber(userData.blocks_per_click || 0)}</div>                                                    
                                 <div class="stat-label">Blocks/Click</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-value">${formatNumber(userData.upgradesOwned || 0)}</div>
+                                <div class="stat-value">${formatNumber(userData.upgrades_owned || 0)}</div>                                                     
                                 <div class="stat-label">Tools Owned</div>
                             </div>
                         </div>

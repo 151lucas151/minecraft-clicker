@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>High Scores - Minecraft Clicker</title>
-    <link rel="stylesheet" href="css/style.css?v=3.1">
+    <link rel="stylesheet" href="css/style.css?v=3.2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>₿</text></svg>">
     <style>
@@ -50,17 +50,29 @@
             background: #2980b9;
         }
         
+        .live-indicator {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+            font-weight: 500;
+        }
+        
         .highscores-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .highscores-table th {
-            background: #2c3e50;
+            background: #34495e;
             color: white;
             padding: 15px;
             text-align: left;
@@ -74,6 +86,11 @@
         
         .highscores-table tr:hover {
             background: #f8f9fa;
+        }
+        
+        .highscores-table tr.current-user {
+            background: #e8f5e8;
+            border-left: 4px solid #27ae60;
         }
         
         .rank {
@@ -97,17 +114,34 @@
             height: 32px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #ecf0f1;
         }
         
         .username {
-            font-weight: 600;
+            font-weight: 500;
             color: #2c3e50;
         }
         
         .score-value {
             font-weight: 600;
             color: #27ae60;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            display: block;
+            color: #7f8c8d;
+            font-size: 10px;
+            margin-bottom: 2px;
         }
         
         .loading {
@@ -122,23 +156,6 @@
             color: #e74c3c;
         }
         
-        .refresh-button {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 20px auto;
-            display: block;
-            transition: background 0.3s;
-        }
-        
-        .refresh-button:hover {
-            background: #229954;
-        }
-        
         .no-scores {
             text-align: center;
             padding: 40px;
@@ -146,20 +163,19 @@
             font-style: italic;
         }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 5px;
-        }
-        
-        .stat-item {
+        .profile-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
             font-size: 12px;
-            color: #7f8c8d;
+            transition: background 0.3s;
         }
         
-        .stat-label {
-            font-weight: 600;
+        .profile-button:hover {
+            background: #2980b9;
         }
     </style>
 </head>
@@ -173,7 +189,7 @@
                 <p>See how you rank against other miners!</p>
             </div>
             
-            <button class="refresh-button" onclick="loadHighScores()">🔄 Refresh Scores</button>
+            <div class="live-indicator">🟢 Live Updates</div>
             
             <div id="highscoresContent">
                 <div class="loading">Loading high scores...</div>
@@ -188,7 +204,7 @@
             if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
             if (num < 1000000000000) return (num / 1000000000).toFixed(1) + 'B';
             if (num < 1000000000000000) return (num / 1000000000000).toFixed(1) + 'T';
-            if (num < 1000000000000000000) return (num / 1000000000000000).toFixed(1) + 'Q';
+            if (num < 1000000000000000000) return (num / 1000000000000).toFixed(1) + 'Q';
             return (num / 1000000000000000000).toFixed(1) + 'Qt';
         }
 
@@ -200,19 +216,80 @@
             return `${hours}h ${minutes}m`;
         }
 
+        function getCurrentUserLiveData() {
+            try {
+                // Get current user from localStorage
+                const savedUser = localStorage.getItem('minecraftClickerUser');
+                if (!savedUser) return null;
+                
+                const currentUser = JSON.parse(savedUser);
+                if (!currentUser.username) return null;
+                
+                // Get current game state from localStorage
+                const gameSave = localStorage.getItem('minecraftClickerSave');
+                if (!gameSave) return null;
+                
+                const gameData = JSON.parse(gameSave);
+                if (!gameData.username || gameData.username !== currentUser.username) return null;
+                
+                // Return live data
+                return {
+                    username: gameData.username,
+                    blocks: gameData.blocks || 0,
+                    totalMined: gameData.totalMined || 0,
+                    totalClicks: gameData.totalClicks || 0,
+                    upgradesOwned: gameData.upgradesOwned || 0,
+                    playTime: Math.floor((Date.now() - (gameData.startTime || Date.now())) / 1000),
+                    profilePicture: 'default.svg'
+                };
+            } catch (error) {
+                console.error('Failed to get current user live data:', error);
+                return null;
+            }
+        }
+
         async function loadHighScores() {
             const contentDiv = document.getElementById('highscoresContent');
             contentDiv.innerHTML = '<div class="loading">Loading high scores...</div>';
             
             try {
-                const response = await fetch('/minecraft-2.0/api/highscores');
+                // Get saved high scores from server
+                const response = await fetch('/api/highscores?t=' + Date.now());
                 const data = await response.json();
                 
                 if (!data.success) {
                     throw new Error(data.message || 'Failed to load high scores');
                 }
                 
-                const scores = data.scores;
+                let scores = data.scores;
+                
+                // Get current user's live data from localStorage
+                const currentUserData = getCurrentUserLiveData();
+                if (currentUserData) {
+                    // Replace or add current user's data with live values
+                    const existingIndex = scores.findIndex(score => score.username === currentUserData.username);
+                    if (existingIndex >= 0) {
+                        // Update existing entry with live data
+                        scores[existingIndex] = {
+                            ...scores[existingIndex],
+                            blocks: currentUserData.blocks,
+                            totalMined: currentUserData.totalMined,
+                            totalClicks: currentUserData.totalClicks,
+                            upgradesOwned: currentUserData.upgradesOwned,
+                            playTime: currentUserData.playTime
+                        };
+                    } else {
+                        // Add new entry for current user
+                        scores.push(currentUserData);
+                    }
+                }
+                
+                // Sort by totalMined descending
+                scores.sort((a, b) => {
+                    const aTotal = parseFloat(a.totalMined) || 0;
+                    const bTotal = parseFloat(b.totalMined) || 0;
+                    return bTotal - aTotal;
+                });
                 
                 if (scores.length === 0) {
                     contentDiv.innerHTML = '<div class="no-scores">No high scores yet! Be the first to set a record!</div>';
@@ -237,18 +314,20 @@
                     const rank = index + 1;
                     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
                     const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const isCurrentUser = currentUserData && score.username === currentUserData.username;
+                    const rowClass = isCurrentUser ? 'current-user' : '';
                     
                     tableHTML += `
-                        <tr>
+                        <tr class="${rowClass}">
                             <td class="rank ${rankClass}">${medal}</td>
                             <td>
                                 <div class="username-cell">
                                     <img src="assets/profilepics/${score.profilePicture}" alt="Profile" class="profile-picture" onerror="this.src='assets/profilepics/default.svg'">
-                                    <span class="username" style="cursor: pointer; text-decoration: underline; color: #3498db;" onclick="viewProfile('${score.username}')">${score.username}</span>
+                                    <span class="username" style="cursor: pointer; text-decoration: underline; color: #3498db;" onclick="viewProfile('${score.username}')">${score.username}${isCurrentUser ? ' (You)' : ''}</span>
                                 </div>
                             </td>
                             <td class="score-value">${formatNumber(score.totalMined)}</td>
-                            <td>${formatNumber(score.blocks)}</td>
+                            <td class="score-value">${formatNumber(score.blocks)}</td>
                             <td>
                                 <div class="stats-grid">
                                     <div class="stat-item">
@@ -279,7 +358,7 @@
                     <div class="error">
                         Failed to load high scores: ${error.message}
                         <br><br>
-                        <button class="refresh-button" onclick="loadHighScores()">Try Again</button>
+                        <button class="profile-button" onclick="loadHighScores()">Try Again</button>
                     </div>
                 `;
             }
@@ -290,7 +369,12 @@
         }
         
         // Load high scores when page loads
-        document.addEventListener('DOMContentLoaded', loadHighScores);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHighScores();
+            
+            // Update every 5 seconds to show live data
+            setInterval(loadHighScores, 5000);
+        });
     </script>
 </body>
-</html> 
+</html>

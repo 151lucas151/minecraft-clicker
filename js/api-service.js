@@ -6,7 +6,7 @@
 
 class GameAPIService {
     constructor() {
-        this.baseURL = '/minecraft-2.0/api';
+        this.baseURL = '/api';
         this.isAuthenticated = false;
         this.username = '';
         this.password = '';
