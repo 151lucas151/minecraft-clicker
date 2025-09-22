@@ -359,42 +359,55 @@ class MinecraftClicker {
 
 
 
-        // Initialize the game
+        // Initialize achievements first (synchronous)
         console.log('About to initialize achievements...');
-        // Initialize achievements from centralized configuration FIRST
         this.initializeAchievements();
         console.log('Achievements initialized');
         
-        // Then load the game state
-        console.log('About to load game...');
-        this.loadGame();
-        console.log('Game loaded');
-        
-        // Update mining tools and setup event listeners
-        console.log('About to update mining tools...');
-        this.updateMiningTools();
-        console.log('Mining tools updated');
-        
-        // Continue with normal initialization flow
-        console.log('About to call setupEventListeners...');
-        this.setupEventListeners();
-        console.log('setupEventListeners completed');
-        console.log('About to render upgrades...');
-        this.renderUpgrades();
-        console.log('Upgrades rendered');
-        console.log('About to render enchantments...');
-        this.renderEnchantments();
-        console.log('Enchantments rendered');
-        console.log('About to start game loop...');
-        this.startGameLoop();
-        console.log('Game loop started');
-        
-        // Initialize the first block
-        this.generateNewBlock();
-        
-        
-        // Update display after everything is initialized (but don't check achievements yet)
-        this.updateDisplayWithoutAchievements();
+        // Start async initialization
+        this.initializeAsync();
+    }
+
+    async initializeAsync() {
+        try {
+            // Load the game state
+            console.log('About to load game...');
+            await this.loadGame();
+            console.log('Game loaded');
+            
+            // Update mining tools and setup event listeners
+            console.log('About to update mining tools...');
+            this.updateMiningTools();
+            console.log('Mining tools updated');
+            
+            // Continue with normal initialization flow
+            console.log('About to call setupEventListeners...');
+            this.setupEventListeners();
+            console.log('setupEventListeners completed');
+            console.log('About to render upgrades...');
+            this.renderUpgrades();
+            console.log('Upgrades rendered');
+            console.log('About to render enchantments...');
+            this.renderEnchantments();
+            console.log('Enchantments rendered');
+            console.log('About to start game loop...');
+            this.startGameLoop();
+            console.log('Game loop started');
+            
+            // Initialize the first block if no game was loaded
+            if (!this.gameState || this.gameState.blocks === 0) {
+                this.generateNewBlock();
+            }
+        } catch (error) {
+            console.error('Error during async initialization:', error);
+            // Fallback initialization
+            this.updateMiningTools();
+            this.setupEventListeners();
+            this.renderUpgrades();
+            this.renderEnchantments();
+            this.startGameLoop();
+            this.generateNewBlock();
+        }
     }
 
 
@@ -834,7 +847,7 @@ class MinecraftClicker {
         return Math.floor(enchantment.cost * Math.pow(enchantment.costMultiplier, owned));
     }
 
-    buyEnchantment(enchantmentId) {
+    async buyEnchantment(enchantmentId) {
         const enchantment = this.enchantments.find(e => e.id === enchantmentId);
         if (!enchantment) return;
 
@@ -856,8 +869,8 @@ class MinecraftClicker {
 
                 this.updateDisplay();
                 this.renderEnchantments();
-                this.saveGame();
-                this.autoSave();
+                await this.saveGame();
+                await this.autoSave();
                 
                 // Show special notification for enchantments
                 const effectText = this.getEnchantmentEffectText(enchantment, owned + 1);
@@ -1046,7 +1059,7 @@ class MinecraftClicker {
         return Math.floor(upgrade.cost * Math.pow(upgrade.costMultiplier, owned));
     }
 
-    buyUpgrade(upgradeId) {
+    async buyUpgrade(upgradeId) {
         const upgrade = this.upgrades.find(u => u.id === upgradeId);
         if (!upgrade) return;
 
@@ -1100,9 +1113,9 @@ class MinecraftClicker {
             this.updateDisplay();
             this.renderUpgrades();
             this.updateMiningTools();
-            this.saveGame();
+            await this.saveGame();
             // Also auto-save to ensure immediate persistence
-            this.autoSave();
+            await this.autoSave();
             this.showNotification(`${upgrade.name} purchased!`, 'success');
         } else {
             this.showNotification(`Not enough blocks! You need ${this.formatNumber(cost)} blocks.`, 'error');
@@ -1284,8 +1297,8 @@ class MinecraftClicker {
                 // Visual feedback for mining speed
                 this.animateMiningSpeed(miningSpeedMultiplier);
                 
-                // Auto-save after each click
-                this.autoSave();
+                // Auto-save after each click (fire and forget)
+                this.autoSave().catch(err => console.warn('Auto-save failed:', err));
             });
             console.log('Mining button event listener added');
         }
@@ -1312,20 +1325,24 @@ class MinecraftClicker {
         const saveButton = document.getElementById('saveButton');
         console.log('Save button found:', saveButton);
         if (saveButton) {
-            saveButton.addEventListener('click', (e) => {
+            saveButton.addEventListener('click', async (e) => {
                 console.log('Save button clicked!', e);
                 e.preventDefault();
                 e.stopPropagation();
-                this.saveGame();
-                this.showNotification('Game saved!', 'success');
+                const saved = await this.saveGame();
+                if (saved) {
+                    this.showNotification('Game saved!', 'success');
+                } else {
+                    this.showNotification('Failed to save game!', 'error');
+                }
             });
             console.log('Save button event listener added');
         }
 
         const loadButton = document.getElementById('loadButton');
         if (loadButton) {
-            loadButton.addEventListener('click', () => {
-                if (this.loadGame()) {
+            loadButton.addEventListener('click', async () => {
+                if (await this.loadGame()) {
                     this.showNotification('Game loaded!', 'success');
                 }
             });
@@ -1352,7 +1369,14 @@ class MinecraftClicker {
 
         // Auto-save when user leaves the page
         window.addEventListener('beforeunload', () => {
-            this.autoSave();
+            // Use synchronous save for beforeunload
+            if (window.gameAPI && window.gameAPI.isAuthenticated) {
+                // For authenticated users, try to save
+                this.saveGame().catch(err => console.warn('Save on unload failed:', err));
+            } else {
+                // For offline users, save locally
+                this.saveGame().catch(err => console.warn('Offline save failed:', err));
+            }
         });
 
         // Account buttons
@@ -1611,7 +1635,7 @@ class MinecraftClicker {
             if (this.achievements[achievement.id]?.unlocked) return; // Already unlocked
             
             if (this.checkAchievementCondition(achievement)) {
-                this.unlockAchievement(achievement.id);
+                this.unlockAchievement(achievement.id).catch(err => console.warn('Achievement unlock failed:', err));
             }
         });
 
@@ -1999,7 +2023,7 @@ class MinecraftClicker {
         }
     }
 
-    unlockAchievement(achievementId) {
+    async unlockAchievement(achievementId) {
         if (!this.achievements[achievementId] || this.achievements[achievementId].unlocked) {
             return;
         }
@@ -2031,9 +2055,9 @@ class MinecraftClicker {
         // Update display
         this.updateDisplay();
         this.renderAchievements();
-        this.saveGame();
+        await this.saveGame();
         // Also auto-save to ensure immediate persistence
-        this.autoSave();
+        await this.autoSave();
     }
 
     startGameLoop() {
@@ -2083,7 +2107,7 @@ class MinecraftClicker {
 
         // Auto-save every 10 seconds
         setInterval(() => {
-            this.autoSave();
+            this.autoSave().catch(err => console.warn('Auto-save failed:', err));
         }, 10000);
     }
 
@@ -2600,33 +2624,34 @@ class MinecraftClicker {
         }, 3000);
     }
 
-    autoSave() {
+    async autoSave() {
         // Only auto-save if the user has made some progress
         if (this.gameState.totalClicks > 0 || this.gameState.totalMined > 0) {
-            this.saveGame();
+            await this.saveGame();
         }
     }
 
-    saveGame() {
+    async saveGame() {
         try {
-            const saveData = {
-                ...this.gameState,
-                saveTime: Date.now()
-            };
-
-            localStorage.setItem('minecraftClickerSave', JSON.stringify(saveData));
-            return true;
+            const result = await window.gameAPI.saveGameState(this.gameState, 'web');
+            if (result.success) {
+                console.log('Game saved:', result.message);
+                return true;
+            } else {
+                console.error('Failed to save game:', result.message);
+                return false;
+            }
         } catch (error) {
             console.error('Failed to save game:', error);
             return false;
         }
     }
 
-    loadGame() {
+    async loadGame() {
         try {
-            const saveData = localStorage.getItem('minecraftClickerSave');
-            if (saveData) {
-                const loadedState = JSON.parse(saveData);
+            const result = await window.gameAPI.loadGameState();
+            if (result.success && result.gameState) {
+                const loadedState = result.gameState;
                 
                 // Validate save data structure
                 if (!loadedState || typeof loadedState !== 'object') {
@@ -2717,6 +2742,7 @@ class MinecraftClicker {
                 this.renderUpgrades();
                 this.renderEnchantments();
                 this.renderAchievements();
+                console.log('Game loaded successfully', result.offline ? '(offline)' : '(online)');
                 return true;
             }
             return false;
@@ -2761,7 +2787,7 @@ class MinecraftClicker {
             currentBlockName: 'Grass Block'
         };
         
-        localStorage.removeItem('minecraftClickerSave');
+        localStorage.removeItem('minecraftClickSave');
         this.recalculateEnchantmentEffects();
         this.updateBlockVisual();
         this.updateDisplayWithoutAchievements();
