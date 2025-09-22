@@ -55,7 +55,15 @@ class MinecraftClicker {
             rareBlocksFound: 0,
             specialBlocksFound: [],
             // Mining power system
-            miningPower: 1.0
+            miningPower: 1.0,
+            // Chest system
+            chestSystem: {
+                isVisible: false,
+                spawnChance: 1/30, // 1 in 30 chance
+                lastSpawnAttempt: 0,
+                spawnCooldown: 30000, // 30 seconds between spawn attempts
+                activeEffects: []
+            }
         };
         console.log('Game state initialized');
 
@@ -1192,6 +1200,10 @@ class MinecraftClicker {
                         this.gameState.miningPower = infinityMultiplier;
                     }
                     
+                    // Apply chest profit multiplier
+                    const profitMultiplier = this.getChestEffectMultiplier('profit_multiplier');
+                    blocksToAdd = Math.floor(blocksToAdd * profitMultiplier);
+                    
                     // Apply enchantment effects
                     if (this.gameState.enchantments) {
                         // Fortune enchantment - chance for bonus blocks
@@ -1420,6 +1432,16 @@ class MinecraftClicker {
                     showHighScoresButton.addEventListener('click', () => {
             window.location.href = '/minecraft-2.0/highscores.html';
         });
+        }
+        
+        // Mystery chest click handler
+        const mysteryChest = document.getElementById('mysteryChest');
+        if (mysteryChest) {
+            mysteryChest.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.openMysteryChest();
+            });
         }
     }
 
@@ -2018,9 +2040,13 @@ class MinecraftClicker {
         setInterval(() => {
             // Add passive income if user has any passive income upgrades
             if (this.gameState.blocksPerSecond > 0) {
-                console.log(`Adding ${this.gameState.blocksPerSecond} blocks per second. Current blocks: ${this.gameState.blocks}`);
-                this.gameState.blocks += this.gameState.blocksPerSecond;
-                this.gameState.totalMined += this.gameState.blocksPerSecond;
+                // Apply chest speed multipliers
+                const speedMultiplier = this.getChestEffectMultiplier('speed_multiplier') * this.getChestEffectMultiplier('speed_penalty');
+                const adjustedBlocksPerSecond = Math.floor(this.gameState.blocksPerSecond * speedMultiplier);
+                
+                console.log(`Adding ${adjustedBlocksPerSecond} blocks per second (${speedMultiplier}x multiplier). Current blocks: ${this.gameState.blocks}`);
+                this.gameState.blocks += adjustedBlocksPerSecond;
+                this.gameState.totalMined += adjustedBlocksPerSecond;
                 console.log(`After adding: ${this.gameState.blocks} blocks`);
             }
             
@@ -2045,6 +2071,12 @@ class MinecraftClicker {
                     }
                 }
             }
+            
+            // Handle chest spawning
+            this.handleChestSpawning();
+            
+            // Handle active chest effects
+            this.updateChestEffects();
             
             this.updateDisplay();
         }, 1000);
@@ -2525,7 +2557,7 @@ class MinecraftClicker {
 
     showNotification(message, type = 'success') {
         const notification = document.getElementById('notification');
-        notification.textContent = message;
+        notification.innerHTML = message;
         notification.className = `notification ${type} show`;
         
         // Add different colors/styles based on type
@@ -2993,12 +3025,8 @@ class MinecraftClicker {
         }
         
         if (blockRequirementElement) {
-            if (this.gameState.currentBlockRequiredTool) {
-                const toolName = this.gameState.currentBlockRequiredTool.replace('_', ' ');
-                blockRequirementElement.textContent = `Requires: ${toolName} or better`;
-            } else {
-                blockRequirementElement.textContent = 'Can mine with bare hands';
-            }
+            // Hide tool requirement messages
+            blockRequirementElement.textContent = '';
         }
         
         // Update block value display
@@ -3046,6 +3074,248 @@ class MinecraftClicker {
         console.log('Current block rarity:', this.gameState.currentBlockRarity);
     }
     
+    // Chest System Methods
+    handleChestSpawning() {
+        // Ensure chestSystem exists (for loaded games that don't have it)
+        if (!this.gameState.chestSystem) {
+            this.gameState.chestSystem = {
+                isVisible: false,
+                spawnChance: 1/30, // 1 in 30 chance
+                lastSpawnAttempt: 0,
+                spawnCooldown: 30000, // 30 seconds between spawn attempts
+                activeEffects: []
+            };
+        }
+        
+        const now = Date.now();
+        const chestSystem = this.gameState.chestSystem;
+        
+        console.log('Chest spawning check:', {
+            now,
+            lastSpawnAttempt: chestSystem.lastSpawnAttempt,
+            cooldownRemaining: chestSystem.spawnCooldown - (now - chestSystem.lastSpawnAttempt),
+            isVisible: chestSystem.isVisible,
+            spawnChance: chestSystem.spawnChance
+        });
+        
+        // Check if enough time has passed since last spawn attempt
+        if (now - chestSystem.lastSpawnAttempt < chestSystem.spawnCooldown) {
+            console.log('Chest spawn on cooldown');
+            return;
+        }
+        
+        // Don't spawn if chest is already visible
+        if (chestSystem.isVisible) {
+            console.log('Chest already visible');
+            return;
+        }
+        
+        // Check spawn chance (1 in 25)
+        const randomValue = Math.random();
+        console.log('Chest spawn roll:', randomValue, 'vs', chestSystem.spawnChance);
+        
+        if (randomValue < chestSystem.spawnChance) {
+            console.log('Chest spawning!');
+            this.spawnChest();
+        } else {
+            console.log('Chest spawn failed (bad roll)');
+        }
+        
+        chestSystem.lastSpawnAttempt = now;
+    }
+    
+    spawnChest() {
+        console.log('spawnChest called');
+        const chestElement = document.getElementById('mysteryChest');
+        console.log('Chest element found:', chestElement);
+        
+        if (chestElement) {
+            this.gameState.chestSystem.isVisible = true;
+            chestElement.style.display = 'block';
+            console.log('Chest made visible');
+            this.showNotification('A mysterious chest has appeared! Click it to see what\'s inside!', 'info');
+            console.log('Chest spawn notification sent');
+        } else {
+            console.error('Chest element not found!');
+        }
+    }
+    
+    openMysteryChest() {
+        const chestElement = document.getElementById('mysteryChest');
+        if (!chestElement || !this.gameState.chestSystem.isVisible) {
+            return;
+        }
+        
+        // Hide the chest
+        chestElement.style.display = 'none';
+        this.gameState.chestSystem.isVisible = false;
+        
+        // Generate random effect
+        const effect = this.generateChestEffect();
+        this.applyChestEffect(effect);
+    }
+    
+    generateChestEffect() {
+        const effects = [
+            // Good effects
+            {
+                type: 'profit_multiplier',
+                value: 10,
+                duration: 15 * 60 * 1000, // 15 minutes
+                description: 'x10 Profit for 15 minutes!',
+                isGood: true
+            },
+            {
+                type: 'blocks_bonus',
+                value: 100000,
+                description: '+100,000 Blocks!',
+                isGood: true
+            },
+            {
+                type: 'speed_multiplier',
+                value: 5,
+                duration: 10 * 60 * 1000, // 10 minutes
+                description: 'x5 Mining Speed for 10 minutes!',
+                isGood: true
+            },
+            {
+                type: 'blocks_bonus',
+                value: 50000,
+                description: '+50,000 Blocks!',
+                isGood: true
+            },
+            {
+                type: 'profit_multiplier',
+                value: 5,
+                duration: 20 * 60 * 1000, // 20 minutes
+                description: 'x5 Profit for 20 minutes!',
+                isGood: true
+            },
+            // Bad effects
+            {
+                type: 'blocks_penalty',
+                value: 100000,
+                description: '-100,000 Blocks!',
+                isGood: false
+            },
+            {
+                type: 'blocks_penalty',
+                value: 50000,
+                description: '-50,000 Blocks!',
+                isGood: false
+            },
+            {
+                type: 'speed_penalty',
+                value: 0.5,
+                duration: 5 * 60 * 1000, // 5 minutes
+                description: 'x0.5 Mining Speed for 5 minutes!',
+                isGood: false
+            }
+        ];
+        
+        // 70% chance for good effects, 30% for bad effects
+        const isGoodEffect = Math.random() < 0.7;
+        const filteredEffects = effects.filter(effect => effect.isGood === isGoodEffect);
+        
+        return filteredEffects[Math.floor(Math.random() * filteredEffects.length)];
+    }
+    
+    applyChestEffect(effect) {
+        const notification = document.createElement('div');
+        notification.className = `chest-effect-notification ${effect.isGood ? 'good' : 'bad'}`;
+        notification.textContent = effect.description;
+        document.body.appendChild(notification);
+        
+        // Remove notification after animation
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+        
+        // Apply the effect
+        switch (effect.type) {
+            case 'profit_multiplier':
+                this.gameState.chestSystem.activeEffects.push({
+                    type: 'profit_multiplier',
+                    value: effect.value,
+                    endTime: Date.now() + effect.duration
+                });
+                break;
+                
+            case 'blocks_bonus':
+                this.gameState.blocks += effect.value;
+                this.gameState.totalMined += effect.value;
+                break;
+                
+            case 'speed_multiplier':
+                this.gameState.chestSystem.activeEffects.push({
+                    type: 'speed_multiplier',
+                    value: effect.value,
+                    endTime: Date.now() + effect.duration
+                });
+                break;
+                
+            case 'blocks_penalty':
+                this.gameState.blocks = Math.max(0, this.gameState.blocks - effect.value);
+                break;
+                
+            case 'speed_penalty':
+                this.gameState.chestSystem.activeEffects.push({
+                    type: 'speed_penalty',
+                    value: effect.value,
+                    endTime: Date.now() + effect.duration
+                });
+                break;
+        }
+        
+        this.updateDisplay();
+    }
+    
+    updateChestEffects() {
+        const now = Date.now();
+        const activeEffects = this.gameState.chestSystem.activeEffects;
+        
+        // Remove expired effects
+        this.gameState.chestSystem.activeEffects = activeEffects.filter(effect => {
+            return effect.endTime > now;
+        });
+    }
+    
+    getChestEffectMultiplier(effectType) {
+        // Ensure chestSystem exists (for loaded games that don't have it)
+        if (!this.gameState.chestSystem) {
+            this.gameState.chestSystem = {
+                isVisible: false,
+                spawnChance: 1/30, // 1 in 30 chance
+                lastSpawnAttempt: 0,
+                spawnCooldown: 30000, // 30 seconds between spawn attempts
+                activeEffects: []
+            };
+        }
+        
+        const activeEffects = this.gameState.chestSystem.activeEffects;
+        const now = Date.now();
+        
+        let multiplier = 1;
+        activeEffects.forEach(effect => {
+            if (effect.type === effectType && effect.endTime > now) {
+                if (effectType === 'speed_penalty') {
+                    multiplier *= effect.value;
+                } else {
+                    multiplier *= effect.value;
+                }
+            }
+        });
+        
+        return multiplier;
+    }
+    
+    // Debug function to manually test chest spawning
+    testChestSpawn() {
+        console.log('Manual chest spawn test called');
+        this.spawnChest();
+    }
 
 }
 
