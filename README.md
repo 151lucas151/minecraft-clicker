@@ -2,6 +2,12 @@
 
 A fun incremental mining game where you click to mine blocks and upgrade your mining operation!
 
+## 🌐 Play the Game
+
+- **🎮 Main Game**: [minecraftclick.com](https://minecraftclick.com) - Play the full game with all features
+- **📄 Landing Page**: [hromp.com/minecraft-clicker](https://hromp.com/minecraft-clicker) - Game information and features
+- **📱 Mobile App**: [React Native App Repository](https://github.com/151lucas151/minecraft-clicker-mobile) - *In Development* - Native mobile app for iOS and Android
+
 ## 🎮 Game Features
 
 - **Incremental Mining**: Click to mine blocks and earn passive income
@@ -13,6 +19,12 @@ A fun incremental mining game where you click to mine blocks and upgrade your mi
 - **Persistent Progress**: Save your game progress locally and in the cloud
 
 ## 🆕 Recent Improvements
+
+### Domain and Deployment
+- **New Domain**: Game now available at [minecraftclick.com](https://minecraftclick.com)
+- **HTTPS Support**: Full SSL encryption for secure gameplay
+- **API Optimization**: All endpoints updated for new domain structure
+- **Navigation Fixes**: High scores and profile links updated
 
 ### User Account System
 - **Secure Registration**: Create accounts with username, password, and email
@@ -34,7 +46,7 @@ A fun incremental mining game where you click to mine blocks and upgrade your mi
 
 ## 🚀 Getting Started
 
-1. **Visit the Game**: Navigate to the game URL
+1. **Visit the Game**: Go to [minecraftclick.com](https://minecraftclick.com) to play
 2. **Create Account**: Click "Register" to create your account
 3. **Start Mining**: Click the grass block to begin mining
 4. **Buy Upgrades**: Purchase mining tools to increase your production
@@ -75,6 +87,8 @@ High scores are ranked by:
 
 ## 🔧 API Endpoints
 
+All API endpoints are available at `https://minecraftclick.com/api/`:
+
 - `POST /api/register` - Create new account
 - `POST /api/login` - User authentication
 - `GET /api/profile` - Get user profile
@@ -83,6 +97,9 @@ High scores are ranked by:
 - `GET /api/highscores` - Get global leaderboard
 - `POST /api/highscores` - Save high score
 - `GET /api/health` - API health check
+- `POST /api/game/save` - Save game state
+- `POST /api/game/load` - Load game state
+- `GET /api/user/<username>` - Get public user profile
 
 ## 🎯 Game Strategy
 
@@ -145,7 +162,18 @@ Planned features for future updates:
 - **More Achievements**: Additional milestones and rewards
 - **Seasonal Events**: Special limited-time content
 - **Advanced Statistics**: Detailed analytics and charts
-- **Mobile App**: Native mobile application
+- **Mobile App**: Native mobile application (React Native) - *In Development*
+
+## 📱 Mobile Development
+
+A React Native mobile app is currently in development to bring Minecraft Clicker to iOS and Android devices. The mobile app will feature:
+- **Native Performance**: Optimized for mobile devices
+- **Offline Play**: Continue mining even without internet
+- **Push Notifications**: Get notified of achievements and milestones
+- **Touch Controls**: Optimized touch interface for mobile
+- **Cross-Platform**: Single codebase for iOS and Android
+
+**Repository**: [151lucas151/minecraft-clicker-mobile](https://github.com/151lucas151/minecraft-clicker-mobile)
 
 ## 📄 License
 
