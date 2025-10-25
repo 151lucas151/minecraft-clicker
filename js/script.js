@@ -961,6 +961,9 @@ class MinecraftClicker {
         // Increment rebirth count
         this.gameState.rebirthCount = (this.gameState.rebirthCount || 0) + 1;
         
+        // Reset blocks to 0 on rebirth
+        this.gameState.blocks = 0;
+        
         // Progress to next block tier
         this.progressToNextBlockTier();
         
