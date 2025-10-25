@@ -34,8 +34,6 @@ class MinecraftClicker {
                 diamond_pickaxe: { current: 0, max: 1562, isBroken: false },
                 netherite_pickaxe: { current: 0, max: 2032, isBroken: false }
             },
-            // Current active tool
-            activeTool: null,
             // Mining speed system
             miningSpeed: 1.0,
             miningCooldown: 0,
@@ -370,32 +368,32 @@ class MinecraftClicker {
     async initializeAsync() {
         try {
             // Load the game state
-            console.log('About to load game...');
+        console.log('About to load game...');
             await this.loadGame();
-            console.log('Game loaded');
-            
-            // Update mining tools and setup event listeners
-            console.log('About to update mining tools...');
-            this.updateMiningTools();
-            console.log('Mining tools updated');
-            
-            // Continue with normal initialization flow
-            console.log('About to call setupEventListeners...');
-            this.setupEventListeners();
-            console.log('setupEventListeners completed');
-            console.log('About to render upgrades...');
-            this.renderUpgrades();
-            console.log('Upgrades rendered');
-            console.log('About to render enchantments...');
-            this.renderEnchantments();
-            console.log('Enchantments rendered');
-            console.log('About to start game loop...');
-            this.startGameLoop();
-            console.log('Game loop started');
-            
+        console.log('Game loaded');
+        
+        // Update mining tools and setup event listeners
+        console.log('About to update mining tools...');
+        this.updateMiningTools();
+        console.log('Mining tools updated');
+        
+        // Continue with normal initialization flow
+        console.log('About to call setupEventListeners...');
+        this.setupEventListeners();
+        console.log('setupEventListeners completed');
+        console.log('About to render upgrades...');
+        this.renderUpgrades();
+        console.log('Upgrades rendered');
+        console.log('About to render enchantments...');
+        this.renderEnchantments();
+        console.log('Enchantments rendered');
+        console.log('About to start game loop...');
+        this.startGameLoop();
+        console.log('Game loop started');
+        
             // Initialize the first block if no game was loaded
             if (!this.gameState || this.gameState.blocks === 0) {
-                this.generateNewBlock();
+        this.generateNewBlock();
             }
         } catch (error) {
             console.error('Error during async initialization:', error);
@@ -573,21 +571,13 @@ class MinecraftClicker {
         document.getElementById('bitcoinAmount').textContent = this.formatNumber(this.gameState.blocks);
         document.getElementById('bitcoinRate').textContent = this.formatNumber(this.gameState.blocksPerSecond);
         
-        // Update click value display with tool information
+        // Update click value display
         const clickValueElement = document.getElementById('clickValue');
         const clickValueTextElement = document.querySelector('.click-value');
         if (clickValueElement) {
-            if (this.gameState.activeTool) {
                 clickValueElement.textContent = this.formatNumber(this.gameState.blocksPerClick);
                 if (clickValueTextElement) {
                     clickValueTextElement.innerHTML = `+<span id="clickValue">${this.formatNumber(this.gameState.blocksPerClick)}</span> Blocks per click`;
-                }
-            } else {
-                // Show bare-handed mining
-                clickValueElement.textContent = '1';
-                if (clickValueTextElement) {
-                    clickValueTextElement.innerHTML = `+<span id="clickValue">1</span> Blocks per click (Bare Hands)`;
-                }
             }
         }
         
@@ -628,15 +618,29 @@ class MinecraftClicker {
     
     
     updateGameMechanicsDisplay() {
-        // Update tool durability display
+        // Update tool durability display - show combined durability of all tools
         const durabilityBar = document.getElementById('durabilityBar');
         const durabilityText = document.getElementById('durabilityText');
         if (durabilityBar && durabilityText) {
-            if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool]) {
-                const toolDurability = this.gameState.toolDurability[this.gameState.activeTool];
-                const durabilityPercent = (toolDurability.current / toolDurability.max) * 100;
+            let totalCurrentDurability = 0;
+            let totalMaxDurability = 0;
+            let brokenTools = 0;
+            
+            // Calculate total durability across all owned tools
+            Object.keys(this.gameState.toolDurability).forEach(toolId => {
+                const owned = this.gameState.upgrades[toolId] || 0;
+                if (owned > 0) {
+                    const toolDurability = this.gameState.toolDurability[toolId];
+                    totalCurrentDurability += toolDurability.current * owned;
+                    totalMaxDurability += toolDurability.max * owned;
+                    // No broken tools since they're removed from inventory
+                }
+            });
+            
+            if (totalMaxDurability > 0) {
+                const durabilityPercent = (totalCurrentDurability / totalMaxDurability) * 100;
                 durabilityBar.style.width = `${durabilityPercent}%`;
-                durabilityText.textContent = `${Math.floor(toolDurability.current)}/${toolDurability.max}`;
+                durabilityText.textContent = `${Math.floor(totalCurrentDurability)}/${totalMaxDurability}`;
                 
                 // Color code based on durability
                 if (durabilityPercent > 60) {
@@ -647,26 +651,21 @@ class MinecraftClicker {
                     durabilityBar.style.backgroundColor = '#f44336';
                 }
                 
-                // Show broken state
+                // No broken state since tools are removed when they break
                 const durabilityContainer = document.getElementById('durabilityContainer');
                 if (durabilityContainer) {
-                    if (toolDurability.isBroken) {
-                        durabilityContainer.classList.add('broken');
-                    } else {
                         durabilityContainer.classList.remove('broken');
-                    }
                 }
             } else {
-                // No active tool
+                // No tools owned
                 durabilityBar.style.width = '0%';
-                durabilityText.textContent = 'Bare Hands';
+                durabilityText.textContent = 'No Tools';
                 durabilityBar.style.backgroundColor = '#ccc';
                 
                 const durabilityContainer = document.getElementById('durabilityContainer');
                 if (durabilityContainer) {
                     durabilityContainer.classList.remove('broken');
-                    // Add a helpful tooltip or class for bare hands
-                    durabilityContainer.title = 'No tools equipped - mining with bare hands at 1 block per click';
+                    durabilityContainer.title = 'No tools owned - mining with bare hands at 1 block per click';
                 }
             }
         }
@@ -751,10 +750,8 @@ class MinecraftClicker {
             
             // Check if this is a pickaxe tool
             const isPickaxeTool = ['wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'diamond_pickaxe', 'netherite_pickaxe'].includes(upgrade.id);
-            const isActiveTool = this.gameState.activeTool === upgrade.id;
+            // Active tool system removed - all tools contribute to mining power
             const toolDurability = isPickaxeTool ? this.gameState.toolDurability[upgrade.id] : null;
-            const isBroken = toolDurability ? toolDurability.isBroken : false;
-            const needsRepair = toolDurability ? toolDurability.current < toolDurability.max : false;
             
             let durabilityInfo = '';
             let actionButtons = '';
@@ -772,13 +769,7 @@ class MinecraftClicker {
                     </div>
                 `;
                 
-                if (isBroken) {
-                    actionButtons = `<button class="repair-button" onclick="game.repairTool('${upgrade.id}')">Repair</button>`;
-                } else if (isActiveTool) {
-                    actionButtons = `<span class="active-tool-indicator">Active Tool</span>`;
-                } else {
-                    actionButtons = `<button class="switch-button" onclick="game.switchTool('${upgrade.id}')">Switch To</button>`;
-                }
+                // Repair system removed - no action buttons needed
             }
             
             upgradeElement.innerHTML = `
@@ -798,10 +789,7 @@ class MinecraftClicker {
                 upgradeElement.classList.add('disabled');
             }
             
-            // Add special styling for broken tools
-            if (isBroken) {
-                upgradeElement.classList.add('broken-tool');
-            }
+            // Broken tool styling removed - tools are removed from inventory when they break
             
             upgradesGrid.appendChild(upgradeElement);
         });
@@ -1076,10 +1064,7 @@ class MinecraftClicker {
                 upgradeId === 'iron_pickaxe' || upgradeId === 'diamond_pickaxe' || 
                 upgradeId === 'netherite_pickaxe') {
                 
-                // Set as active tool if it's the first one purchased
-                if (!this.gameState.activeTool) {
-                    this.gameState.activeTool = upgradeId;
-                }
+                // All tools now contribute to mining power - no active tool needed
                 
                 // Initialize durability if this is the first time purchasing this tool
                 if (this.gameState.upgrades[upgradeId] === 1) {
@@ -1138,24 +1123,21 @@ class MinecraftClicker {
                     return; // Still on cooldown
                 }
                 
-                // Check if tool is broken - allow bare-handed mining if no tools available
-                if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool].isBroken) {
-                    this.showNotification('Your tool is broken! Repair it or buy a new one.', 'error');
-                    return;
-                }
+                // Check if user has any tools - if not, allow bare-handed mining
+                const hasTools = Object.keys(this.gameState.upgrades).some(upgradeId => 
+                    ['wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'diamond_pickaxe', 'netherite_pickaxe'].includes(upgradeId) && 
+                    (this.gameState.upgrades[upgradeId] || 0) > 0);
                 
-                // Tool requirements disabled - can mine any block
-                
-                // If no active tool, use bare hands (1 block per click)
-                if (!this.gameState.activeTool) {
-                    // Ensure base mining power is preserved for bare-handed mining
-                    this.gameState.blocksPerClick = Math.max(1, this.gameState.blocksPerClick);
-                    
+                if (!hasTools) {
                     // Show helpful message for new players
                     if (this.gameState.totalClicks === 0) {
                         this.showNotification('Mining with bare hands! Buy tools to mine faster.', 'info');
                     }
                 }
+                
+                // Tool requirements disabled - can mine any block
+                
+                // All owned tools contribute to mining power automatically
                 
                 // Calculate mining speed multiplier from Efficiency enchantment
                 let miningSpeedMultiplier = 1.0;
@@ -1263,10 +1245,21 @@ class MinecraftClicker {
                     // Add blocks to main currency
                     this.gameState.blocks += blocksToAdd;
                     this.gameState.totalMined += blocksToAdd;
+                    
+                    // Check and save high score automatically
+                    this.checkAndSaveHighScore();
                 }
                 
-                // Tool durability damage
-                if (this.gameState.activeTool && !this.gameState.toolDurability[this.gameState.activeTool].isBroken) {
+                // Tool durability damage - damage one random tool per click
+                const availableTools = Object.keys(this.gameState.toolDurability).filter(toolId => {
+                    const owned = this.gameState.upgrades[toolId] || 0;
+                    return owned > 0 && !this.gameState.toolDurability[toolId].isBroken;
+                });
+                
+                if (availableTools.length > 0) {
+                    // Pick a random tool to damage
+                    const toolToDamage = availableTools[Math.floor(Math.random() * availableTools.length)];
+                    
                     // Calculate durability loss
                     let durabilityLoss = 1;
                     
@@ -1279,16 +1272,24 @@ class MinecraftClicker {
                         }
                     }
                     
-                    this.gameState.toolDurability[this.gameState.activeTool].current -= durabilityLoss;
+                    this.gameState.toolDurability[toolToDamage].current -= durabilityLoss;
                     
-                    // Check if tool broke
-                    if (this.gameState.toolDurability[this.gameState.activeTool].current <= 0) {
-                        this.gameState.toolDurability[this.gameState.activeTool].current = 0;
-                        this.gameState.toolDurability[this.gameState.activeTool].isBroken = true;
-                        this.showNotification(`Your ${this.gameState.activeTool.replace('_', ' ')} broke! Repair it or buy a new one.`, 'error');
+                    // Check if tool broke - remove it from inventory
+                    if (this.gameState.toolDurability[toolToDamage].current <= 0) {
+                        // Remove one tool from inventory
+                        this.gameState.upgrades[toolToDamage] = Math.max(0, (this.gameState.upgrades[toolToDamage] || 0) - 1);
+                        this.gameState.upgradesOwned = Math.max(0, this.gameState.upgradesOwned - 1);
                         
-                        // Auto-switch to best available tool
-                        this.autoSwitchToBestTool();
+                        // Reset durability for remaining tools of this type
+                        if (this.gameState.upgrades[toolToDamage] > 0) {
+                            this.gameState.toolDurability[toolToDamage].current = this.gameState.toolDurability[toolToDamage].max;
+                            this.gameState.toolDurability[toolToDamage].isBroken = false;
+                        }
+                        
+                        this.showNotification(`Your ${toolToDamage.replace('_', ' ')} broke and was removed! Buy a new one to replace it.`, 'error');
+                        
+                        // Recalculate mining power after tool removal
+                        this.recalculateEnchantmentEffects();
                     }
                 }
                 
@@ -1324,32 +1325,8 @@ class MinecraftClicker {
             }
         });
 
-        // Control buttons
-        const saveButton = document.getElementById('saveButton');
-        console.log('Save button found:', saveButton);
-        if (saveButton) {
-            saveButton.addEventListener('click', async (e) => {
-                console.log('Save button clicked!', e);
-                e.preventDefault();
-                e.stopPropagation();
-                const saved = await this.saveGame();
-                if (saved) {
-                    this.showNotification('Game saved!', 'success');
-                } else {
-                    this.showNotification('Failed to save game!', 'error');
-                }
-            });
-            console.log('Save button event listener added');
-        }
-
-        const loadButton = document.getElementById('loadButton');
-        if (loadButton) {
-            loadButton.addEventListener('click', async () => {
-                if (await this.loadGame()) {
-                    this.showNotification('Game loaded!', 'success');
-                }
-            });
-        }
+        // Control buttons - Save and Load buttons removed as they are redundant
+        // Game auto-saves continuously and auto-loads on login
 
         const resetButton = document.getElementById('resetButton');
         if (resetButton) {
@@ -1413,10 +1390,21 @@ class MinecraftClicker {
 
                 const result = await this.loginUser(username, password);
                 if (result.success) {
+                    // Update game state
                     this.gameState.username = username;
                     this.gameState.password = password;
+                    
+                    // Update API service credentials
+                    window.gameAPI.setCredentials(username, password);
+                    
+                    // Load the user's saved game
+                    if (await this.loadGame()) {
+                        this.showNotification('Login successful! Game loaded.', 'success');
+                    } else {
+                        this.showNotification('Login successful! Starting fresh game.', 'success');
+                    }
+                    
                     this.updateAccountDisplay();
-                    this.showNotification('Login successful!', 'success');
                 } else {
                     this.showNotification(result.message || 'Login failed!', 'error');
                 }
@@ -1426,8 +1414,13 @@ class MinecraftClicker {
         const logoutButton = document.getElementById('logoutButton');
         if (logoutButton) {
             logoutButton.addEventListener('click', () => {
+                // Clear game state
                 this.gameState.username = '';
                 this.gameState.password = '';
+                
+                // Clear API service credentials
+                window.gameAPI.clearCredentials();
+                
                 this.updateAccountDisplay();
                 this.showNotification('Logged out!', 'success');
             });
@@ -1436,22 +1429,15 @@ class MinecraftClicker {
         const profileButton = document.getElementById('profileButton');
         if (profileButton) {
             profileButton.addEventListener('click', () => {
-                window.location.href = '/minecraft-2.0/profile.html';
+                window.location.href = '/profile.html';
             });
         }
 
         // High score buttons
-        const saveHighScoreButton = document.getElementById('saveHighScoreButton');
-        if (saveHighScoreButton) {
-            saveHighScoreButton.addEventListener('click', () => {
-                this.saveHighScore();
-            });
-        }
-
         const showHighScoresButton = document.getElementById('showHighScoresButton');
         if (showHighScoresButton) {
                     showHighScoresButton.addEventListener('click', () => {
-            window.location.href = '/minecraft-2.0/highscores.html';
+            window.location.href = '/highscores.html';
         });
         }
         
@@ -1462,7 +1448,7 @@ class MinecraftClicker {
                 e.preventDefault();
                 e.stopPropagation();
                 this.openMysteryChest();
-            });
+        });
         }
     }
 
@@ -1760,9 +1746,6 @@ class MinecraftClicker {
         if (hour === 12 && minute === 0 && second === 0) {
             this.unlockAchievement('noon_strike');
         }
-        if (second === 30) {
-            this.unlockAchievement('second_precision');
-        }
 
         // Time of day achievements
         if (hour >= 5 && hour < 7) {
@@ -1804,28 +1787,34 @@ class MinecraftClicker {
         const isFirefox = /Firefox/.test(userAgent);
         const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
 
+        // Check if achievement is already unlocked in current achievements OR in saved game state
+        const isAchievementUnlocked = (achievementId) => {
+            return this.achievements[achievementId]?.unlocked || 
+                   this.gameState.achievements?.[achievementId]?.unlocked;
+        };
+
         if (isMobile) {
-            if (!this.achievements['mobile_player']?.unlocked) {
+            if (!isAchievementUnlocked('mobile_player')) {
                 this.unlockAchievement('mobile_player');
             }
         } else {
-            if (!this.achievements['desktop_player']?.unlocked) {
+            if (!isAchievementUnlocked('desktop_player')) {
                 this.unlockAchievement('desktop_player');
             }
         }
 
         if (isChrome) {
-            if (!this.achievements['chrome_user']?.unlocked) {
+            if (!isAchievementUnlocked('chrome_user')) {
                 this.unlockAchievement('chrome_user');
             }
         }
         if (isFirefox) {
-            if (!this.achievements['firefox_user']?.unlocked) {
+            if (!isAchievementUnlocked('firefox_user')) {
                 this.unlockAchievement('firefox_user');
             }
         }
         if (isSafari) {
-            if (!this.achievements['safari_user']?.unlocked) {
+            if (!isAchievementUnlocked('safari_user')) {
                 this.unlockAchievement('safari_user');
             }
         }
@@ -2047,6 +2036,9 @@ class MinecraftClicker {
             this.gameState.blocks += achievement.reward;
             this.gameState.totalMined += achievement.reward;
             this.showNotification(`🏆 Achievement Unlocked: ${achievement.name}! +${this.formatNumber(achievement.reward)} blocks`, 'achievement');
+            
+            // Check and save high score automatically
+            this.checkAndSaveHighScore();
         }
 
         // Update display
@@ -2065,32 +2057,32 @@ class MinecraftClicker {
                 const speedMultiplier = this.getChestEffectMultiplier('speed_multiplier') * this.getChestEffectMultiplier('speed_penalty');
                 const adjustedBlocksPerSecond = Math.floor(this.gameState.blocksPerSecond * speedMultiplier);
                 
-                console.log(`Adding ${adjustedBlocksPerSecond} blocks per second (${speedMultiplier}x multiplier). Current blocks: ${this.gameState.blocks}`);
+                console.log(`Adding ${adjustedBlocksPerSecond} blocks per second (${speedMultiplier}x multiplier). Current blocks: ${this.gameState.blocks}`); 
                 this.gameState.blocks += adjustedBlocksPerSecond;
                 this.gameState.totalMined += adjustedBlocksPerSecond;
                 console.log(`After adding: ${this.gameState.blocks} blocks`);
+                
+                // Check and save high score automatically
+                this.checkAndSaveHighScore();
             }
             
-            // Handle tool repair (Mending enchantment)
-            if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool]) {
-                const toolDurability = this.gameState.toolDurability[this.gameState.activeTool];
-                if (toolDurability.isBroken || toolDurability.current < toolDurability.max) {
+            // Handle tool repair (Mending enchantment) - repair all tools
                     if (this.gameState.enchantments && this.gameState.enchantments.mending > 0) {
                         const mendingLevel = this.gameState.enchantments.mending;
                         const repairRate = mendingLevel * 2; // 2 durability per second per level
                         
+                Object.keys(this.gameState.toolDurability).forEach(toolId => {
+                    const owned = this.gameState.upgrades[toolId] || 0;
+                    if (owned > 0) {
+                        const toolDurability = this.gameState.toolDurability[toolId];
+                        if (toolDurability.current < toolDurability.max) {
                         toolDurability.current = Math.min(
                             toolDurability.current + repairRate,
                             toolDurability.max
                         );
-                        
-                        // Check if tool is fully repaired
-                        if (toolDurability.isBroken && toolDurability.current >= toolDurability.max) {
-                            toolDurability.isBroken = false;
-                            this.showNotification(`Your ${this.gameState.activeTool.replace('_', ' ')} has been repaired!`, 'success');
                         }
                     }
-                }
+                });
             }
             
             // Handle chest spawning
@@ -2106,6 +2098,11 @@ class MinecraftClicker {
         setInterval(() => {
             this.autoSave().catch(err => console.warn('Auto-save failed:', err));
         }, 10000);
+        
+        // Auto-save high scores every 30 seconds
+        setInterval(() => {
+            this.checkAndSaveHighScore();
+        }, 30000);
     }
 
     formatNumber(num) {
@@ -2462,8 +2459,8 @@ class MinecraftClicker {
     
     checkBlockMineability() {
         // Tool requirements disabled - can mine any block with bare hands
-        this.gameState.canMineCurrentBlock = true;
-        this.gameState.miningBlockedReason = null;
+            this.gameState.canMineCurrentBlock = true;
+            this.gameState.miningBlockedReason = null;
     }
     
     animateMiningSpeed(speedMultiplier) {
@@ -2573,7 +2570,7 @@ class MinecraftClicker {
             const result = await window.gameAPI.saveGameState(this.gameState, 'web');
             if (result.success) {
                 console.log('Game saved:', result.message);
-                return true;
+            return true;
             } else {
                 console.error('Failed to save game:', result.message);
                 return false;
@@ -2625,8 +2622,6 @@ class MinecraftClicker {
                         diamond_pickaxe: { current: 0, max: 1562, isBroken: false },
                         netherite_pickaxe: { current: 0, max: 2032, isBroken: false }
                     },
-                    // Current active tool
-                    activeTool: null,
                     // Mining speed system
                     miningSpeed: 1.0,
                     miningCooldown: 0,
@@ -2637,7 +2632,7 @@ class MinecraftClicker {
                     currentBlockRequiredTool: null,
                     currentBlockColor: '#8B4513',
                     currentBlockImage: 'assets/blocks/grass.png',
-                            canMineCurrentBlock: true,
+                    canMineCurrentBlock: true,
                     rareBlocksFound: 0,
                     specialBlocksFound: [],
                     miningPower: 1.0,
@@ -2678,6 +2673,13 @@ class MinecraftClicker {
                 this.renderUpgrades();
                 this.renderEnchantments();
                 this.renderAchievements();
+                
+                // Restore login state if user was logged in
+                if (this.gameState.username && this.gameState.password) {
+                    window.gameAPI.setCredentials(this.gameState.username, this.gameState.password);
+                    this.updateAccountDisplay();
+                }
+                
                 console.log('Game loaded successfully', result.offline ? '(offline)' : '(online)');
                 return true;
             }
@@ -2744,7 +2746,7 @@ class MinecraftClicker {
 
     async checkUsernameAvailability(username) {
         try {
-            const response = await fetch('/minecraft-2.0/api/check-username', {
+            const response = await fetch('/api/check-username', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2761,7 +2763,7 @@ class MinecraftClicker {
 
     async registerUser(username, password) {
         try {
-            const response = await fetch('/minecraft-2.0/api/register', {
+            const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2778,7 +2780,7 @@ class MinecraftClicker {
 
     async loginUser(username, password) {
         try {
-            const response = await fetch('/minecraft-2.0/api/login', {
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2795,7 +2797,7 @@ class MinecraftClicker {
 
     async getHighScores() {
         try {
-            const response = await fetch('/minecraft-2.0/api/highscores');
+            const response = await fetch('/api/highscores');
             const data = await response.json();
             return data.success ? data.scores : [];
         } catch (error) {
@@ -2816,7 +2818,7 @@ class MinecraftClicker {
         }
 
         try {
-            const response = await fetch('/minecraft-2.0/api/highscores', {
+            const response = await fetch('/api/highscores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2850,106 +2852,48 @@ class MinecraftClicker {
         }
     }
 
-    // Switch to a different tool
-    switchTool(toolId) {
-        console.log('Attempting to switch to tool:', toolId);
-        console.log('Current upgrades:', this.gameState.upgrades);
-        console.log('Current active tool:', this.gameState.activeTool);
-        
-        if (!this.gameState.upgrades[toolId] || this.gameState.upgrades[toolId] === 0) {
-            this.showNotification('You need to purchase this tool first!', 'error');
-            return;
-        }
+    // Automatically check and save high score when totalMined increases
+    async checkAndSaveHighScore() {
+        // Only save if user is logged in and totalMined has increased
+        if (this.gameState.username && this.gameState.password && this.gameState.totalMined > this.gameState.highScore) {
+            try {
+                const response = await fetch('/api/highscores', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: this.gameState.username,
+                        password: this.gameState.password,
+                        blocks: this.gameState.blocks,
+                        totalMined: this.gameState.totalMined,
+                        totalClicks: this.gameState.totalClicks,
+                        upgradesOwned: this.gameState.upgradesOwned,
+                        playTime: Math.floor((Date.now() - this.gameState.startTime) / 1000)
+                    })
+                });
 
-        if (this.gameState.toolDurability[toolId].isBroken) {
-            this.showNotification('This tool is broken! Repair it first.', 'error');
-            return;
-        }
-
-        this.gameState.activeTool = toolId;
-        console.log('Switched to tool:', toolId);
-        this.showNotification(`Switched to ${toolId.replace('_', ' ')}!`, 'success');
-        this.updateDisplay();
-        this.saveGame();
-    }
-
-    // Repair a broken tool
-    repairTool(toolId) {
-        console.log('Attempting to repair tool:', toolId);
-        console.log('Current blocks:', this.gameState.blocks);
-        console.log('Tool durability:', this.gameState.toolDurability[toolId]);
-        
-        if (!this.gameState.upgrades[toolId] || this.gameState.upgrades[toolId] === 0) {
-            this.showNotification('You need to purchase this tool first!', 'error');
-            return;
-        }
-
-        const toolDurability = this.gameState.toolDurability[toolId];
-        if (!toolDurability.isBroken) {
-            this.showNotification('This tool is not broken!', 'error');
-            return;
-        }
-
-        // Calculate repair cost (cheaper than buying new)
-        const baseCost = this.upgrades.find(u => u.id === toolId)?.cost || 100;
-        const repairCost = Math.floor(baseCost * 0.3); // 30% of original cost
-        
-        console.log('Repair cost:', repairCost, 'Base cost:', baseCost);
-
-        if (this.gameState.blocks >= repairCost) {
-            this.gameState.blocks -= repairCost;
-            toolDurability.current = toolDurability.max;
-            toolDurability.isBroken = false;
-            
-            console.log('Tool repaired successfully');
-            this.showNotification(`${toolId.replace('_', ' ')} repaired!`, 'success');
-            
-            // Recheck block mineability after repair
-            this.checkBlockMineability();
-            
-            this.updateDisplay();
-            this.saveGame();
-        } else {
-            this.showNotification(`Not enough blocks! Need ${repairCost} blocks to repair.`, 'error');
-        }
-    }
-
-    // Get the best available tool (highest tier that's not broken)
-    getBestAvailableTool() {
-        const toolOrder = ['netherite_pickaxe', 'diamond_pickaxe', 'iron_pickaxe', 'stone_pickaxe', 'wooden_pickaxe'];
-        console.log('Checking tool availability. Tool order:', toolOrder);
-        
-        for (const toolId of toolOrder) {
-            console.log(`Checking ${toolId}: owned=${this.gameState.upgrades[toolId]}, broken=${this.gameState.toolDurability[toolId]?.isBroken}`);
-            if (this.gameState.upgrades[toolId] && this.gameState.upgrades[toolId] > 0) {
-                if (!this.gameState.toolDurability[toolId].isBroken) {
-                    console.log(`Found best available tool: ${toolId}`);
-                    return toolId;
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update personal high score
+                    this.gameState.highScore = this.gameState.totalMined;
+                    this.saveGame();
+                    console.log('High score automatically updated:', this.gameState.totalMined);
                 }
+            } catch (error) {
+                console.error('Failed to auto-save high score:', error);
             }
         }
-        console.log('No available tools found');
-        return null;
     }
 
-    // Auto-switch to best available tool when current one breaks
-    autoSwitchToBestTool() {
-        console.log('Auto-switching to best available tool');
-        console.log('Current active tool:', this.gameState.activeTool);
-        
-        if (this.gameState.activeTool && this.gameState.toolDurability[this.gameState.activeTool].isBroken) {
-            const bestTool = this.getBestAvailableTool();
-            console.log('Best available tool:', bestTool);
-            
-            if (bestTool) {
-                this.gameState.activeTool = bestTool;
-                this.showNotification(`Auto-switched to ${bestTool.replace('_', ' ')}!`, 'info');
-            } else {
-                this.gameState.activeTool = null;
-                this.showNotification('All your tools are broken! Buy or repair a tool to continue mining.', 'error');
-            }
-        }
-    }
+    // Tool switching removed - all owned tools now contribute to mining power
+
+    // Repair system removed - broken tools are removed from inventory
+
+    // Tool selection removed - all owned tools contribute to mining power
+
+    // Auto-switching removed - all owned tools contribute to mining power
 
     // Skip block method removed - tool requirements disabled
 
@@ -3192,6 +3136,9 @@ class MinecraftClicker {
             case 'blocks_bonus':
                 this.gameState.blocks += effect.value;
                 this.gameState.totalMined += effect.value;
+                
+                // Check and save high score automatically
+                this.checkAndSaveHighScore();
                 break;
                 
             case 'speed_multiplier':
