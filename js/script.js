@@ -1172,6 +1172,9 @@ class MinecraftClicker {
                 const baseBlockValue = this.gameState.currentBlockBitcoinValue || 1;
                 let blocksToAdd = baseBlockValue;
                 
+                // Add blocks per click bonus from purchased tools
+                blocksToAdd += this.gameState.blocksPerClick - 1;
+                
                 // Only process special effects if block is broken
                 if (blockBroken) {
                     // Check if this is a special chest block
