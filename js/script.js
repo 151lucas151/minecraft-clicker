@@ -1009,6 +1009,9 @@ class MinecraftClicker {
         this.renderEnchantments();
         this.updateBlockVisual();
         this.updateDisplay();
+        
+        // Save the game state after rebirth
+        this.saveGame();
     }
 
     progressToNextBlockTier() {
