@@ -1450,6 +1450,33 @@ class MinecraftClicker {
                 this.openMysteryChest();
         });
         }
+        
+        // Shop button click handler
+        const shopButton = document.getElementById('shopButton');
+        if (shopButton) {
+            shopButton.addEventListener('click', () => {
+                this.openShop();
+            });
+        }
+        
+        // Close shop button
+        const closeShopButton = document.getElementById('closeShopButton');
+        if (closeShopButton) {
+            closeShopButton.addEventListener('click', () => {
+                this.closeShop();
+            });
+        }
+        
+        // Shop buy buttons
+        document.querySelectorAll('.shop-buy-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const shopItem = e.target.closest('.shop-item');
+                if (shopItem) {
+                    const itemType = shopItem.dataset.item;
+                    this.purchaseShopItem(itemType);
+                }
+            });
+        });
     }
 
     updateAccountDisplay() {
@@ -3208,6 +3235,96 @@ class MinecraftClicker {
     testChestSpawn() {
         console.log('Manual chest spawn test called');
         this.spawnChest();
+    }
+    
+    // Shop methods
+    openShop() {
+        const shopModal = document.getElementById('shopModal');
+        if (shopModal) {
+            shopModal.style.display = 'flex';
+        }
+    }
+    
+    closeShop() {
+        const shopModal = document.getElementById('shopModal');
+        if (shopModal) {
+            shopModal.style.display = 'none';
+        }
+    }
+    
+    purchaseShopItem(itemType) {
+        // This is a demo - no real purchases
+        let blocksToAdd = 0;
+        let message = '';
+        let effectType = null;
+        let effectDuration = null;
+        let effectMultiplier = null;
+        
+        switch (itemType) {
+            case 'blocks-small':
+                blocksToAdd = 10000000;
+                message = 'You received 10,000,000 blocks!';
+                break;
+            case 'blocks-medium':
+                blocksToAdd = 50000000;
+                message = 'You received 50,000,000 blocks!';
+                break;
+            case 'blocks-large':
+                blocksToAdd = 150000000;
+                message = 'You received 150,000,000 blocks!';
+                break;
+            case 'hour-blocks':
+                // Calculate 1 hour of passive income
+                const blocksPerSecond = this.gameState.blocksPerSecond || 1;
+                blocksToAdd = blocksPerSecond * 3600; // 1 hour in seconds
+                message = `You received ${this.formatNumber(blocksToAdd)} blocks (1 hour of passive income)!`;
+                break;
+            case 'multiplier-short':
+                effectType = 'profit_multiplier';
+                effectDuration = 30 * 60 * 1000; // 30 minutes
+                effectMultiplier = 2;
+                message = 'x2 blocks multiplier activated for 30 minutes!';
+                break;
+            case 'multiplier-long':
+                effectType = 'profit_multiplier';
+                effectDuration = 60 * 60 * 1000; // 1 hour
+                effectMultiplier = 3;
+                message = 'x3 blocks multiplier activated for 1 hour!';
+                break;
+        }
+        
+        // Apply the purchase
+        if (blocksToAdd > 0) {
+            this.gameState.blocks += blocksToAdd;
+            this.gameState.totalMined += blocksToAdd;
+            this.updateDisplay();
+            this.checkAndSaveHighScore();
+        } else if (effectType && effectMultiplier) {
+            // Apply multiplier effect
+            if (!this.gameState.chestSystem) {
+                this.gameState.chestSystem = {
+                    isVisible: false,
+                    spawnChance: 1/30,
+                    lastSpawnAttempt: 0,
+                    spawnCooldown: 30000,
+                    activeEffects: []
+                };
+            }
+            this.gameState.chestSystem.activeEffects.push({
+                type: effectType,
+                value: effectMultiplier,
+                endTime: Date.now() + effectDuration
+            });
+        }
+        
+        // Show notification
+        this.showNotification(message, 'success');
+        
+        // Save game after purchase
+        this.autoSave().catch(err => console.warn('Auto-save failed:', err));
+        
+        // Close shop after purchase
+        this.closeShop();
     }
 
 }
