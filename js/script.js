@@ -3291,6 +3291,53 @@ class MinecraftClicker {
                 effectMultiplier = 3;
                 message = 'x3 blocks multiplier activated for 1 hour!';
                 break;
+            case 'blocks-huge':
+                blocksToAdd = 500000000;
+                message = 'You received 500,000,000 blocks!';
+                break;
+            case 'blocks-extreme':
+                blocksToAdd = 2000000000;
+                message = 'You received 2,000,000,000 blocks!';
+                break;
+            case 'speed-boost':
+                effectType = 'speed_multiplier';
+                effectDuration = 60 * 60 * 1000; // 1 hour
+                effectMultiplier = 2;
+                message = '2x mining speed activated for 1 hour!';
+                break;
+            case 'all-tools':
+                // Give one of each basic pickaxe
+                this.gameState.upgrades['wooden_pickaxe'] = (this.gameState.upgrades['wooden_pickaxe'] || 0) + 1;
+                this.gameState.upgrades['stone_pickaxe'] = (this.gameState.upgrades['stone_pickaxe'] || 0) + 1;
+                this.gameState.upgrades['iron_pickaxe'] = (this.gameState.upgrades['iron_pickaxe'] || 0) + 1;
+                this.gameState.upgrades['diamond_pickaxe'] = (this.gameState.upgrades['diamond_pickaxe'] || 0) + 1;
+                this.gameState.upgrades['netherite_pickaxe'] = (this.gameState.upgrades['netherite_pickaxe'] || 0) + 1;
+                this.gameState.upgradesOwned += 5;
+                this.gameState.blocksPerClick += 176; // Total bonus from all tools
+                message = 'You received all basic pickaxes!';
+                break;
+            case 'premium-tools':
+                // Give 3 of each premium pickaxe
+                const diamondCount = (this.gameState.upgrades['diamond_pickaxe'] || 0) + 3;
+                const netheriteCount = (this.gameState.upgrades['netherite_pickaxe'] || 0) + 3;
+                this.gameState.upgrades['diamond_pickaxe'] = diamondCount;
+                this.gameState.upgrades['netherite_pickaxe'] = netheriteCount;
+                this.gameState.upgradesOwned += 6;
+                this.gameState.blocksPerClick += 450; // 3x Diamond (150) + 3x Netherite (300)
+                message = 'You received 3 of each premium pickaxe!';
+                break;
+            case 'permanent-multiplier':
+                effectType = 'profit_multiplier';
+                effectDuration = Infinity; // Permanent
+                effectMultiplier = 1.25;
+                message = 'Permanent 25% blocks bonus activated!';
+                break;
+            case 'auto-clicker':
+                effectType = 'auto_click';
+                effectDuration = 24 * 60 * 60 * 1000; // 24 hours
+                effectMultiplier = 2; // 2 clicks per second
+                message = 'Auto-clicker activated for 24 hours!';
+                break;
         }
         
         // Apply the purchase
