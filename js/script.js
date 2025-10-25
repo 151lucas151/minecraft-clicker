@@ -964,6 +964,37 @@ class MinecraftClicker {
         // Reset blocks to 0 on rebirth
         this.gameState.blocks = 0;
         
+        // Reset all upgrades (tools) - go back to scratch
+        this.gameState.upgrades = {};
+        
+        // Reset enchantments
+        this.gameState.enchantments = {};
+        
+        // Reset tool durability
+        this.gameState.toolDurability = {
+            wooden_pickaxe: { current: 0, max: 60, isBroken: false },
+            stone_pickaxe: { current: 0, max: 132, isBroken: false },
+            iron_pickaxe: { current: 0, max: 251, isBroken: false },
+            diamond_pickaxe: { current: 0, max: 1562, isBroken: false },
+            netherite_pickaxe: { current: 0, max: 2032, isBroken: false }
+        };
+        
+        // Reset stats
+        this.gameState.totalMined = 0;
+        this.gameState.totalClicks = 0;
+        this.gameState.upgradesOwned = 0;
+        this.gameState.rareBlocksFound = 0;
+        this.gameState.specialBlocksFound = [];
+        
+        // Reset chest system
+        this.gameState.chestSystem = {
+            isVisible: false,
+            spawnChance: 1/30,
+            lastSpawnAttempt: 0,
+            spawnCooldown: 30000,
+            activeEffects: []
+        };
+        
         // Progress to next block tier
         this.progressToNextBlockTier();
         
@@ -973,8 +1004,11 @@ class MinecraftClicker {
         // Recalculate all effects with rebirth multipliers
         this.recalculateEnchantmentEffects();
         
-        // Update the visual block
+        // Re-render the game
+        this.renderUpgrades();
+        this.renderEnchantments();
         this.updateBlockVisual();
+        this.updateDisplay();
     }
 
     progressToNextBlockTier() {
