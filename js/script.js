@@ -1168,12 +1168,9 @@ class MinecraftClicker {
                     this.generateNewBlock();
                 }
                 
-                // Give rewards based on damage dealt, not just when block is broken
-                // Calculate reward proportional to damage dealt
-                const totalBlockHealth = this.gameState.currentBlockHealth;
-                const damageFraction = damageDealt / totalBlockHealth;
+                // Give full block value on every click
                 const baseBlockValue = this.gameState.currentBlockBitcoinValue || 1;
-                let blocksToAdd = Math.max(1, Math.floor(baseBlockValue * damageFraction));
+                let blocksToAdd = baseBlockValue;
                 
                 // Only process special effects if block is broken
                 if (blockBroken) {
