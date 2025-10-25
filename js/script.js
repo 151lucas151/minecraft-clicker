@@ -1186,16 +1186,24 @@ class MinecraftClicker {
                     this.generateNewBlock();
                 }
                 
-                // Only get blocks if the block was broken
+                // Give rewards based on damage dealt, not just when block is broken
+                // Calculate reward proportional to damage dealt
+                const totalBlockHealth = this.gameState.currentBlockHealth;
+                const damageFraction = damageDealt / totalBlockHealth;
+                const baseBlockValue = this.gameState.currentBlockBitcoinValue || 1;
+                let blocksToAdd = Math.max(1, Math.floor(baseBlockValue * damageFraction));
+                
+                // Only process special effects if block is broken
                 if (blockBroken) {
                     // Check if this is a special chest block
                     if (this.gameState.currentBlockName === 'Mystery Chest') {
                         this.openMysteryChest();
                         return; // Exit early since chest handles its own display update
                     }
-                    
-                    // Use the block's value for direct currency
-                    let blocksToAdd = this.gameState.currentBlockBitcoinValue || 1;
+                }
+                
+                // Apply multipliers to blocks earned (only if we earned something)
+                if (blocksToAdd > 0) {
                     
                     // Apply block tier multiplier from rebirths
                     const blockMultiplier = this.gameState.currentBlockMultiplier || 1;
