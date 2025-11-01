@@ -13,6 +13,15 @@ from datetime import datetime
 import secrets
 import re
 
+# Try to import stripe, but allow API to run without it
+try:
+    import stripe
+    STRIPE_AVAILABLE = True
+    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_YOUR_SECRET_KEY_HERE')
+except ImportError:
+    STRIPE_AVAILABLE = False
+    print("Warning: Stripe not installed. Payment features will be disabled. Install with: pip3 install stripe")
+
 app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests
 
@@ -75,6 +84,20 @@ def init_db():
             token TEXT UNIQUE NOT NULL,
             expires_at TIMESTAMP NOT NULL,
             used BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    # Purchases table for tracking real money transactions
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            stripe_session_id TEXT UNIQUE,
+            item_type TEXT NOT NULL,
+            price_in_cents INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
@@ -514,6 +537,130 @@ def save_high_score():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Failed to save high score: {str(e)}'}), 500
 
+@app.route('/api/purchase/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    """Create a Stripe Checkout session for a purchase"""
+    if not STRIPE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Payment system not available. Stripe not installed.'}), 503
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        item_type = data.get('itemType', '')
+        price_in_cents = data.get('priceInCents', 0)
+        
+        if not username or not password:
+            return jsonify({'success': False, 'message': 'Username and password are required'}), 400
+        
+        if not item_type or not price_in_cents:
+            return jsonify({'success': False, 'message': 'Item type and price are required'}), 400
+        
+        # Authenticate user
+        user_id = authenticate_user(username, password)
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+        
+        # Get item name for display
+        item_names = {
+            'blocks-small': '10,000,000 Blocks',
+            'blocks-medium': '50,000,000 Blocks',
+            'blocks-large': '150,000,000 Blocks',
+            'hour-blocks': '1 Hour Passive Income',
+            'multiplier-short': 'x2 Blocks (30 min)',
+            'multiplier-long': 'x3 Blocks (1 hour)',
+            'blocks-huge': '500,000,000 Blocks',
+            'blocks-extreme': '2,000,000,000 Blocks',
+            'speed-boost': '2x Mining Speed (1 hour)',
+            'all-tools': 'All Basic Tools',
+            'premium-tools': 'Premium Tools Pack',
+            'permanent-multiplier': 'Permanent +25% Boost',
+            'auto-clicker': 'Auto-Clicker (24 hours)'
+        }
+        
+        item_name = item_names.get(item_type, 'Shop Item')
+        
+        # Create Stripe Checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': item_name,
+                        'description': f'Minecraft Clicker - {item_name}',
+                    },
+                    'unit_amount': price_in_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url='http://localhost:8000/purchase-success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='http://localhost:8000/purchase-cancelled',
+            client_reference_id=str(user_id),
+            metadata={
+                'username': username,
+                'item_type': item_type,
+                'price_in_cents': str(price_in_cents)
+            }
+        )
+        
+        # Store purchase record in database
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO purchases (user_id, stripe_session_id, item_type, price_in_cents, status)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, checkout_session.id, item_type, price_in_cents, 'pending'))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'sessionId': checkout_session.id
+        }), 200
+        
+    except Exception as e:
+        print(f"Checkout error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to create checkout session: {str(e)}'}), 500
+
+@app.route('/api/purchase/fulfill', methods=['POST'])
+def fulfill_purchase():
+    """Fulfill a purchase after successful payment"""
+    if not STRIPE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Payment system not available. Stripe not installed.'}), 503
+    try:
+        data = request.get_json()
+        session_id = data.get('sessionId', '')
+        
+        if not session_id:
+            return jsonify({'success': False, 'message': 'Session ID required'}), 400
+        
+        # Retrieve the session from Stripe
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        if session.payment_status != 'paid':
+            return jsonify({'success': False, 'message': 'Payment not completed'}), 400
+        
+        # Update purchase status in database
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE purchases SET status = 'completed' WHERE stripe_session_id = ?
+        ''', (session_id,))
+        conn.commit()
+        conn.close()
+        
+        # Return success
+        return jsonify({
+            'success': True,
+            'itemType': session.metadata.get('item_type'),
+            'message': 'Purchase fulfilled successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"Fulfillment error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fulfill purchase: {str(e)}'}), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -531,5 +678,7 @@ if __name__ == '__main__':
     print("  POST /api/check-username - Check username availability")
     print("  GET /api/highscores - Get high scores")
     print("  POST /api/highscores - Save high score")
+    print("  POST /api/purchase/create-checkout-session - Create Stripe checkout")
+    print("  POST /api/purchase/fulfill - Fulfill purchase")
     print("  GET /api/health - Health check")
     app.run(host='0.0.0.0', port=5002, debug=True)

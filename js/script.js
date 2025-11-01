@@ -22,6 +22,7 @@ class MinecraftClicker {
             highScore: 0,
             lastClickTime: 0,
             sessionStartTime: Date.now(),
+            lastSaveTime: Date.now(),
             rebirthCount: 0,
             currentBlockTier: 0,
             currentBlockMultiplier: 1,
@@ -63,6 +64,14 @@ class MinecraftClicker {
             }
         };
         console.log('Game state initialized');
+
+        // Initialize Stripe for real money payments
+        if (typeof Stripe !== 'undefined') {
+            this.stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY_HERE'); // Replace with your actual Stripe publishable key
+            console.log('Stripe initialized');
+        } else {
+            console.warn('Stripe not loaded');
+        }
 
         this.upgrades = [
             // Tool upgrades
@@ -253,7 +262,7 @@ class MinecraftClicker {
             {
                 id: 'rebirth',
                 name: 'Rebirth',
-                description: 'Start a new life with increased power. Multiplies all production by 2x.',
+                description: 'Start a new life! Unlocks higher tier blocks with greater value.',
                 cost: 10000000000000000,
                 costMultiplier: 1.0,
                 effect: { type: 'rebirth', value: 2 }
@@ -923,13 +932,8 @@ class MinecraftClicker {
             });
         }
         
-        // Finally apply rebirth multipliers
-        const rebirthCount = this.gameState.rebirthCount || 0;
-        if (rebirthCount > 0) {
-            const rebirthMultiplier = Math.pow(2, rebirthCount); // 2x per rebirth
-            this.gameState.blocksPerClick = Math.floor(this.gameState.blocksPerClick * rebirthMultiplier);
-            this.gameState.blocksPerSecond = Math.floor(this.gameState.blocksPerSecond * rebirthMultiplier);
-        }
+        // Rebirths should NOT multiply base production - they just unlock higher tier blocks
+        // The rebirth multiplier has been removed to fix the bug where money per click wasn't resetting
     }
 
     getEnchantmentEffectText(enchantment, level) {
@@ -998,10 +1002,7 @@ class MinecraftClicker {
         // Progress to next block tier
         this.progressToNextBlockTier();
         
-        // Apply rebirth multiplier to all production
-        this.applyRebirthMultiplier();
-        
-        // Recalculate all effects with rebirth multipliers
+        // Recalculate all effects (without rebirth multipliers - rebirths just unlock higher tier blocks)
         this.recalculateEnchantmentEffects();
         
         // Re-render the game
@@ -1036,12 +1037,6 @@ class MinecraftClicker {
         this.gameState.currentBlockTier = tierIndex;
         this.gameState.currentBlockMultiplier = blockTiers[tierIndex].multiplier;
         this.gameState.currentBlockName = blockTiers[tierIndex].name;
-    }
-
-    applyRebirthMultiplier() {
-        // Instead of multiplying existing values, we'll recalculate everything
-        // This method is called after the rebirth effect is applied
-        // The actual calculation happens in recalculateEnchantmentEffects
     }
 
     updateBlockVisual() {
@@ -2580,7 +2575,7 @@ class MinecraftClicker {
         }).onfinish = () => particle.remove();
     }
 
-    showNotification(message, type = 'success') {
+    showNotification(message, type = 'success', duration = 3000) {
         const notification = document.getElementById('notification');
         notification.innerHTML = message;
         notification.className = `notification ${type} show`;
@@ -2622,7 +2617,7 @@ class MinecraftClicker {
             // Reset styles after hiding
             notification.style.backgroundColor = '';
             notification.style.borderColor = '';
-        }, 3000);
+        }, duration);
     }
 
     async autoSave() {
@@ -2634,6 +2629,9 @@ class MinecraftClicker {
 
     async saveGame() {
         try {
+            // Update last save time
+            this.gameState.lastSaveTime = Date.now();
+            
             const result = await window.gameAPI.saveGameState(this.gameState, 'web');
             if (result.success) {
                 console.log('Game saved:', result.message);
@@ -2677,6 +2675,7 @@ class MinecraftClicker {
                     highScore: 0,
                     lastClickTime: 0,
                     sessionStartTime: Date.now(), // Always set to current time for new session
+                    lastSaveTime: Date.now(),
                     rebirthCount: 0,
                     currentBlockTier: 0,
                     currentBlockMultiplier: 1,
@@ -2730,6 +2729,9 @@ class MinecraftClicker {
                 // Recalculate enchantment effects after loading
                 this.recalculateEnchantmentEffects();
                 
+                // Calculate and add offline earnings
+                this.handleOfflineEarnings();
+                
                 // Generate a new block and check mineability
                 this.generateNewBlock();
                 
@@ -2755,6 +2757,60 @@ class MinecraftClicker {
             console.error('Failed to load game:', error);
             this.showNotification('Failed to load save data. Starting fresh game.', 'error');
             return false;
+        }
+    }
+
+    handleOfflineEarnings() {
+        // Calculate offline earnings based on time since last save
+        // Use saveTime for backward compatibility with old saves
+        const lastSaveTime = this.gameState.lastSaveTime || this.gameState.saveTime;
+        if (!lastSaveTime) {
+            return;
+        }
+        
+        const now = Date.now();
+        const timeSinceLastSave = now - lastSaveTime;
+        const offlineSeconds = Math.floor(timeSinceLastSave / 1000);
+        
+        // Only show offline earnings if user was away for more than 10 seconds
+        if (offlineSeconds <= 10 || this.gameState.blocksPerSecond === 0) {
+            return;
+        }
+        
+        // Limit offline earnings to maximum 24 hours (to prevent abuse)
+        const maxOfflineSeconds = 24 * 60 * 60;
+        const cappedSeconds = Math.min(offlineSeconds, maxOfflineSeconds);
+        
+        // Calculate offline earnings
+        const offlineBlocks = Math.floor(this.gameState.blocksPerSecond * cappedSeconds);
+        
+        if (offlineBlocks > 0) {
+            // Add offline earnings
+            this.gameState.blocks += offlineBlocks;
+            this.gameState.totalMined += offlineBlocks;
+            
+            // Show offline earnings notification
+            const hours = Math.floor(cappedSeconds / 3600);
+            const minutes = Math.floor((cappedSeconds % 3600) / 60);
+            const seconds = cappedSeconds % 60;
+            
+            let timeAway = '';
+            if (hours > 0) {
+                timeAway += `${hours}h `;
+            }
+            if (minutes > 0) {
+                timeAway += `${minutes}m `;
+            }
+            if (seconds > 0 || timeAway === '') {
+                timeAway += `${seconds}s`;
+            }
+            
+            // Show notification
+            this.showNotification(
+                `Welcome back! You earned ${this.formatNumber(offlineBlocks)} blocks while away (${timeAway.trim()})`,
+                'success',
+                10000 // Show for 10 seconds
+            );
         }
     }
 
@@ -2786,6 +2842,7 @@ class MinecraftClicker {
             highScore: this.gameState.highScore,
             lastClickTime: 0,
             sessionStartTime: Date.now(), // Reset session start time
+            lastSaveTime: Date.now(),
             rebirthCount: 0,
             currentBlockTier: 0,
             currentBlockMultiplier: 1,
@@ -3292,8 +3349,62 @@ class MinecraftClicker {
         }
     }
     
-    purchaseShopItem(itemType) {
-        // This is a demo - no real purchases
+    async purchaseShopItem(itemType) {
+        // Map shop items to their prices in cents
+        const prices = {
+            'blocks-small': 599, // $5.99
+            'blocks-medium': 999, // $9.99
+            'blocks-large': 1999, // $19.99
+            'hour-blocks': 299, // $2.99
+            'multiplier-short': 199, // $1.99
+            'multiplier-long': 499, // $4.99
+            'blocks-huge': 4999, // $49.99
+            'blocks-extreme': 9999, // $99.99
+            'speed-boost': 399, // $3.99
+            'all-tools': 799, // $7.99
+            'premium-tools': 1999, // $19.99
+            'permanent-multiplier': 1499, // $14.99
+            'auto-clicker': 999 // $9.99
+        };
+        
+        const priceInCents = prices[itemType];
+        if (!priceInCents) {
+            this.showNotification('Unknown item', 'error');
+            return;
+        }
+        
+        // Redirect to Stripe Checkout
+        try {
+            // Create checkout session on backend
+            const response = await fetch('http://localhost:5002/api/purchase/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: this.gameState.username,
+                    password: this.gameState.password,
+                    itemType: itemType,
+                    priceInCents: priceInCents
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.sessionId) {
+                // Redirect to Stripe Checkout
+                await this.stripe.redirectToCheckout({ sessionId: data.sessionId });
+            } else {
+                this.showNotification('Failed to create checkout session', 'error');
+            }
+        } catch (error) {
+            console.error('Checkout error:', error);
+            this.showNotification('Payment system error', 'error');
+        }
+    }
+    
+    async applyPurchase(itemType) {
+        // This is called after successful payment
         let blocksToAdd = 0;
         let message = '';
         let effectType = null;
